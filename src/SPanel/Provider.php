@@ -292,6 +292,6 @@ class Provider extends Category implements ProviderInterface
             return $this->api;
         }
 
-        return $this->api = new Api($this->configuration, $this->getLogger(), $this->getGuzzleHandlerStack());
+        return $this->api = new Api($this->configuration, $this->getGuzzleHandlerStack());
     }
 }
