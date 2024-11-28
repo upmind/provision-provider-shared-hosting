@@ -9,7 +9,6 @@ use Illuminate\Support\Arr;
 use GuzzleHttp\Client;
 use Throwable;
 use Carbon\Carbon;
-use Psr\Log\LoggerInterface;
 use GuzzleHttp\HandlerStack;
 use Upmind\ProvisionBase\Helper;
 use Illuminate\Support\Str;
@@ -22,14 +21,11 @@ use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 class Api
 {
     private Configuration $configuration;
-    private ?LoggerInterface $logger;
     protected Client $client;
 
-    public function __construct(Configuration $configuration, ?LoggerInterface $logger = null, ?HandlerStack $handler = null)
+    public function __construct(Configuration $configuration, ?HandlerStack $handler = null)
     {
         $this->configuration = $configuration;
-        $this->logger = $logger;
-
         $this->client = new Client([
             'base_uri' => sprintf('https://%s', $this->configuration->hostname),
             'headers' => [
