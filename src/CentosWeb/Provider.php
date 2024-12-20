@@ -75,17 +75,13 @@ class Provider extends Category implements ProviderInterface
 
         $username = $params->username ?: $this->generateUsername($params->domain);
 
-        try {
-            $this->api()->createAccount(
-                $params,
-                $username,
-                $asReseller
-            );
+        $this->api()->createAccount(
+            $params,
+            $username,
+            $asReseller
+        );
 
-            return $this->_getInfo($username, $asReseller, 'Account created');
-        } catch (Throwable $e) {
-            $this->handleException($e);
-        }
+        return $this->_getInfo($username, $asReseller, 'Account created');
     }
 
     protected function generateUsername(string $base): string
@@ -119,15 +115,11 @@ class Provider extends Category implements ProviderInterface
     {
         $asReseller = boolval($params->is_reseller ?? false);
 
-        try {
-            return $this->_getInfo(
-                $params->username,
-                $asReseller,
-                'Account info retrieved',
-            );
-        } catch (Throwable $e) {
-            $this->handleException($e);
-        }
+        return $this->_getInfo(
+            $params->username,
+            $asReseller,
+            'Account info retrieved',
+        );
     }
 
     /**
@@ -137,16 +129,12 @@ class Provider extends Category implements ProviderInterface
      */
     public function getUsage(AccountUsername $params): AccountUsage
     {
-        try {
-            $asReseller = boolval($params->is_reseller ?? false);
+        $asReseller = boolval($params->is_reseller ?? false);
 
-            $usage = $this->api()->getAccountUsage($params->username, $asReseller);
+        $usage = $this->api()->getAccountUsage($params->username, $asReseller);
 
-            return AccountUsage::create()
-                ->setUsageData($usage);
-        } catch (Throwable $e) {
-            $this->handleException($e);
-        }
+        return AccountUsage::create()
+            ->setUsageData($usage);
     }
 
     /**
@@ -158,16 +146,12 @@ class Provider extends Category implements ProviderInterface
      */
     public function getLoginUrl(GetLoginUrlParams $params): LoginUrl
     {
-        try {
-            $timer = 30;
-            $loginUrl = $this->api()->getLoginUrl($params->username, $timer);
+        $timer = 30;
+        $loginUrl = $this->api()->getLoginUrl($params->username, $timer);
 
-            return LoginUrl::create()
-                ->setLoginUrl($loginUrl)
-                ->setExpires(Carbon::now()->addMinutes($timer));
-        } catch (Throwable $e) {
-            $this->handleException($e);
-        }
+        return LoginUrl::create()
+            ->setLoginUrl($loginUrl)
+            ->setExpires(Carbon::now()->addMinutes($timer));
     }
 
     /**
@@ -179,13 +163,9 @@ class Provider extends Category implements ProviderInterface
      */
     public function changePassword(ChangePasswordParams $params): EmptyResult
     {
-        try {
-            $this->api()->updatePassword($params->username, $params->password);
+        $this->api()->updatePassword($params->username, $params->password);
 
-            return $this->emptyResult('Password changed');
-        } catch (Throwable $e) {
-            $this->handleException($e);
-        }
+        return $this->emptyResult('Password changed');
     }
 
     /**
@@ -197,17 +177,13 @@ class Provider extends Category implements ProviderInterface
      */
     public function changePackage(ChangePackageParams $params): AccountInfo
     {
-        try {
-            $this->api()->updatePackage($params->username, $params->package_name);
+        $this->api()->updatePackage($params->username, $params->package_name);
 
-            return $this->_getInfo(
-                $params->username,
-                false,
-                'Package changed'
-            );
-        } catch (Throwable $e) {
-            $this->handleException($e);
-        }
+        return $this->_getInfo(
+            $params->username,
+            false,
+            'Package changed'
+        );
     }
 
     /**
@@ -219,13 +195,9 @@ class Provider extends Category implements ProviderInterface
      */
     public function suspend(SuspendParams $params): AccountInfo
     {
-        try {
-            $this->api()->suspendAccount($params->username);
+        $this->api()->suspendAccount($params->username);
 
-            return $this->_getInfo($params->username, false, 'Account suspended');
-        } catch (Throwable $e) {
-            $this->handleException($e);
-        }
+        return $this->_getInfo($params->username, false, 'Account suspended');
     }
 
     /**
@@ -237,13 +209,9 @@ class Provider extends Category implements ProviderInterface
      */
     public function unSuspend(AccountUsername $params): AccountInfo
     {
-        try {
-            $this->api()->unsuspendAccount($params->username);
+        $this->api()->unsuspendAccount($params->username);
 
-            return $this->_getInfo($params->username, false, 'Account unsuspended');
-        } catch (Throwable $e) {
-            $this->handleException($e);
-        }
+        return $this->_getInfo($params->username, false, 'Account unsuspended');
     }
 
     /**
@@ -255,13 +223,9 @@ class Provider extends Category implements ProviderInterface
      */
     public function terminate(AccountUsername $params): EmptyResult
     {
-        try {
-            $this->api()->deleteAccount($params->username);
+        $this->api()->deleteAccount($params->username);
 
-            return $this->emptyResult('Account deleted');
-        } catch (Throwable $e) {
-            $this->handleException($e);
-        }
+        return $this->emptyResult('Account deleted');
     }
 
     /**
