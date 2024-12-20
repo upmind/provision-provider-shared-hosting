@@ -5,10 +5,7 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\SharedHosting\CentosWeb;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\ServerException;
 use Carbon\Carbon;
-use GuzzleHttp\Exception\ConnectException;
-use GuzzleHttp\Exception\TransferException;
 use Throwable;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
@@ -33,7 +30,7 @@ use Upmind\ProvisionProviders\SharedHosting\CentosWeb\Data\Configuration;
  */
 class Provider extends Category implements ProviderInterface
 {
-    protected const MAX_USERNAME_LENGTH = 10;
+    protected const MAX_USERNAME_LENGTH = 8;
 
     /**
      * @var Configuration
@@ -72,10 +69,6 @@ class Provider extends Category implements ProviderInterface
     {
         $asReseller = boolval($params->as_reseller ?? false);
 
-        if (!$this->configuration->ip && !$params->custom_ip) {
-            $this->errorResult('Custom ip is required');
-        }
-
         if (!$params->domain) {
             $this->errorResult('Domain name is required');
         }
@@ -101,7 +94,7 @@ class Provider extends Category implements ProviderInterface
             preg_replace('/^[^a-z]+/', '', preg_replace('/[^a-z0-9]/', '', strtolower($base))),
             0,
             self::MAX_USERNAME_LENGTH
-        );
+        ) . rand(0, 99);
     }
 
     /**
@@ -205,11 +198,7 @@ class Provider extends Category implements ProviderInterface
     public function changePackage(ChangePackageParams $params): AccountInfo
     {
         try {
-            if (!is_numeric($params->package_name)) {
-                $this->errorResult('Package must be a numeric');
-            }
-
-            $this->api()->updatePackage($params->username, (int)$params->package_name);
+            $this->api()->updatePackage($params->username, $params->package_name);
 
             return $this->_getInfo(
                 $params->username,
@@ -303,15 +292,7 @@ class Provider extends Category implements ProviderInterface
      */
     protected function handleException(Throwable $e): void
     {
-        if ($e instanceof ProvisionFunctionError) {
-            throw $e->withData(
-                array_merge($e->getData())
-            )->withDebug(
-                array_merge($e->getDebug())
-            );
-        }
-
-        // let the provision system handle this one
+        // let the provision system handle this
         throw $e;
     }
 
