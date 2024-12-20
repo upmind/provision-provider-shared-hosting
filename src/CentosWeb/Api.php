@@ -35,8 +35,7 @@ class Api
         string  $command,
         ?array  $body = null,
         ?string $method = 'POST',
-    ): ?array
-    {
+    ): ?array {
         $requestParams = [];
 
         if ($body) {
@@ -70,10 +69,17 @@ class Api
         }
 
         if ($error = $this->getResponseErrorMessage($parsedResult)) {
+            $data = [
+                'response' => $this->sanitizeResponse($response),
+            ];
+
+            if ($parsedResult) {
+                $data = [
+                    'response_data' => $this->sanitizeResponse($parsedResult),
+                ];
+            }
             throw ProvisionFunctionError::create($error)
-                ->withData([
-                    'response' => $response,
-                ]);
+                ->withData($data);
         }
 
         return $parsedResult;
@@ -83,10 +89,29 @@ class Api
     {
         $status = $response['status'];
         if ($status == 'Error' || (isset($response['msj']) && $response['msj'] === 'no records exist')) {
-            return $response['msj'] ?? $response['msl'] ?? 'Unknown error';
+            return $this->sanitizeResponse($response['msj'] ?? $response['msl'] ?? 'Unknown error');
         }
 
         return null;
+    }
+
+    /**
+     * @return array|string|mixed
+     */
+    private function sanitizeResponse($response)
+    {
+        if (is_iterable($response)) {
+            foreach ($response as $key => $value) {
+                $response[$key] = $this->sanitizeResponse($value);
+            }
+            return $response;
+        }
+
+        if (!is_string($response)) {
+            return $response;
+        }
+
+        return trim(str_replace($this->configuration->api_key, '', $response));
     }
 
     public function createAccount(CreateParams $params, string $username, bool $asReseller): void
@@ -99,8 +124,8 @@ class Api
             'user' => $username,
             'pass' => $password,
             'email' => $params->email,
-            'package' => $params->package_name,
-            'server_ips' => $params->custom_ip ?? $this->$this->configuration->ip
+            'package' => $this->getPackageId($params->package_name),
+            'server_ips' => $params->custom_ip ?? $this->configuration->shared_ip_address
         ];
 
         if ($asReseller) {
@@ -245,15 +270,17 @@ class Api
 
 
     /**
+     * @param string|int $package
+     *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \RuntimeException
      */
-    public function updatePackage(string $username, int $package): void
+    public function updatePackage(string $username, $package): void
     {
         $body = [
             'action' => 'udp',
             'user' => $username,
-            'package' => $package
+            'package' => $this->getPackageId($package),
         ];
 
         $this->makeRequest('changepack', $body);
@@ -273,5 +300,31 @@ class Api
         ];
 
         return $this->makeRequest('user_session', $body)['msj']['details'][0]['url'];
+    }
+
+    /**
+     * @param string|int $package
+     */
+    public function getPackageId($package): int
+    {
+        if (is_numeric($package)) {
+            return (int)$package;
+        }
+
+        $body = [
+            'action' => 'list',
+        ];
+
+        $packages = $this->makeRequest('packages', $body);
+        foreach ($packages['msj'] as $data) {
+            if ($data['package_name'] === $package) {
+                return (int)$data['id'];
+            }
+        }
+
+        throw (new ProvisionFunctionError("Package not found"))
+            ->withData([
+                'package' => $package,
+            ]);
     }
 }
