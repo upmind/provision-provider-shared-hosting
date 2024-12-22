@@ -56,7 +56,6 @@ class Api
         return $this->parseResponseData($result);
     }
 
-
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -135,7 +134,6 @@ class Api
         $this->makeRequest('account', $body);
     }
 
-
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \RuntimeException
@@ -155,7 +153,6 @@ class Api
             'ip' => $account['ip_address'] ?? null,
         ];
     }
-
 
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
@@ -185,7 +182,6 @@ class Api
             ]);
     }
 
-
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \RuntimeException
@@ -207,7 +203,6 @@ class Api
             ->setBandwidthMb($bandwidth);
     }
 
-
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \RuntimeException
@@ -221,7 +216,6 @@ class Api
 
         $this->makeRequest('account', $body);
     }
-
 
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
@@ -237,7 +231,6 @@ class Api
         $this->makeRequest('account', $body);
     }
 
-
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \RuntimeException
@@ -251,7 +244,6 @@ class Api
 
         $this->makeRequest('account', $body);
     }
-
 
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
@@ -267,7 +259,6 @@ class Api
 
         $this->makeRequest('changepass', $body);
     }
-
 
     /**
      * @param string|int $package
@@ -285,7 +276,6 @@ class Api
 
         $this->makeRequest('changepack', $body);
     }
-
 
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
