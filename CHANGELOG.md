@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.9.0](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.9.0) - 2024-12-22
+
+- Implement CentOS Web Panel (CWP) provider
+
 ## [v6.8.4](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.8.4) - 2024-12-04
 
 - Update Enhance getInfo()
@@ -80,6 +84,10 @@ All notable changes to the package will be documented in this file.
 - Update for PHP 8.1
 - Update base lib to v4
 - Update 20i SDK to v1.1
+
+## [v6.6.19](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.19) - 2024-12-22
+
+- Implement CentOS Web Panel (CWP) provider
 
 ## [v6.6.18](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.18) - 2024-12-04
 
