@@ -43,6 +43,7 @@ The following providers are currently implemented:
   - [InterWorx](https://appendix.interworx.com/current/api/index.html)
   - [SolidCP](https://solidcp.com/kb/)
   - [DirectAdmin](https://www.directadmin.com/api.php)
+  - [CentOS Web Panel (CWP)](https://docs.control-webpanel.com/docs/developer-tools/api-manager/functions)
 
 ## Functions
 
