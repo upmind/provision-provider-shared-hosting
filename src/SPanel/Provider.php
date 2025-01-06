@@ -96,7 +96,7 @@ class Provider extends Category implements ProviderInterface
      * @throws \RuntimeException
      * @throws \Throwable
      */
-    protected function _getInfo(?string $username, string $message): AccountInfo
+    protected function _getInfo(string $username, string $message): AccountInfo
     {
         $info = $this->api()->getAccountData($username);
 
