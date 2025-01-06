@@ -15,6 +15,7 @@ use Upmind\ProvisionProviders\SharedHosting\TwentyI\Provider as TwentyI;
 use Upmind\ProvisionProviders\SharedHosting\Enhance\Provider as Enhance;
 use Upmind\ProvisionProviders\SharedHosting\InterWorx\Provider as InterWorx;
 use Upmind\ProvisionProviders\SharedHosting\DirectAdmin\Provider as DirectAdmin;
+use Upmind\ProvisionProviders\SharedHosting\SPanel\Provider as SPanel;
 
 class LaravelServiceProvider extends ProvisionServiceProvider
 {
@@ -32,5 +33,6 @@ class LaravelServiceProvider extends ProvisionServiceProvider
         $this->bindProvider('shared-hosting', 'inter-worx', InterWorx::class);
         $this->bindProvider('shared-hosting', 'solidcp', SolidCP::class);
         $this->bindProvider('shared-hosting', 'direct-admin', DirectAdmin::class);
+        $this->bindProvider('shared-hosting', 'spanel', SPanel::class);
     }
 }
