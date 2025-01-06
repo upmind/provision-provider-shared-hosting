@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\SharedHosting\SPanel;
 
 use GuzzleHttp\Exception\GuzzleException;
-use Illuminate\Support\Arr;
 use GuzzleHttp\Client;
+use JsonException;
 use Throwable;
-use Carbon\Carbon;
 use GuzzleHttp\HandlerStack;
 use Upmind\ProvisionBase\Helper;
-use Illuminate\Support\Str;
 use Upmind\ProvisionProviders\SharedHosting\Data\CreateParams;
 use Upmind\ProvisionProviders\SharedHosting\Data\UnitsConsumed;
 use Upmind\ProvisionProviders\SharedHosting\Data\UsageData;
@@ -47,8 +45,7 @@ class Api
     public function makeRequest(
         ?array  $body = null,
         ?string $method = 'POST'
-    ): ?array
-    {
+    ): ?array {
         $requestParams = [];
 
         $body['token'] = $this->configuration->api_token;
@@ -72,7 +69,14 @@ class Api
      */
     private function parseResponseData(string $response): array
     {
-        $parsedResult = json_decode($response, true);
+        try {
+            $parsedResult = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $ex) {
+            throw ProvisionFunctionError::create('Failed to parse response data', $ex)
+                ->withData([
+                    'response' => $response,
+                ]);
+        }
 
         if ($error = $this->getResponseErrorMessage($parsedResult)) {
             throw ProvisionFunctionError::create($error)
@@ -86,7 +90,7 @@ class Api
 
     private function getResponseErrorMessage(array $response): ?string
     {
-        if ($response['result'] == 'error') {
+        if ($response['result'] === 'error') {
             if (is_string($response['message'])) {
                 return $response['message'];
             }
@@ -122,7 +126,7 @@ class Api
     /**
      * @throws ProvisionFunctionError
      * @throws \RuntimeException
-     * @throws Throwable
+     * @throws \Throwable
      */
     public function getAccountData(string $username): array
     {
@@ -132,16 +136,28 @@ class Api
         ];
 
         $response = $this->makeRequest($body);
-        $data = $response['data'][0];
+
+        $accountData = [];
+
+        foreach($response['data'] as $data) {
+            if ($data['user'] === $username) {
+                $accountData = $data;
+            }
+        }
+
+        // If no matching result is found, throw an error
+        if (empty($accountData)) {
+            throw ProvisionFunctionError::create('Account not found');
+        }
 
         return [
-            'username' => $data['user'],
-            'domain' => $data['domain'],
+            'username' => $accountData['user'],
+            'domain' => $accountData['domain'],
             'reseller' => false,
             'server_hostname' => $this->configuration->hostname,
-            'package_name' => $data['package'],
-            'suspended' => !($data['suspended'] == '0'),
-            'ip' => $data['ip'],
+            'package_name' => $accountData['package'],
+            'suspended' => $accountData['suspended'] !== '0',
+            'ip' => $accountData['ip'],
         ];
     }
 
@@ -158,15 +174,27 @@ class Api
         ];
 
         $response = $this->makeRequest($body);
-        $data = $response['data'][0];
+
+        $accountData = [];
+
+        foreach($response['data'] as $data) {
+            if ($data['user'] === $username) {
+                $accountData = $data;
+            }
+        }
+
+        // If no matching result is found, throw an error
+        if (empty($accountData)) {
+            throw ProvisionFunctionError::create('Account not found');
+        }
 
         $disk = UnitsConsumed::create()
-            ->setUsed(isset($data['disk']) ? ((int)$data['disk']) : null)
-            ->setLimit($data['disklimit'] == 'Unlimited' ? null : (int)$data['disklimit']);
+            ->setUsed(isset($accountData['disk']) ? ((int)$accountData['disk']) : null)
+            ->setLimit($accountData['disklimit'] === 'Unlimited' ? null : (int) $accountData['disklimit']);
 
         $inodes = UnitsConsumed::create()
-            ->setUsed(isset($data['inodes']) ? ((float)$data['inodes']) : null)
-            ->setLimit($data['inodeslimit'] === 'Unlimited' ? null : $data['inodeslimit']);
+            ->setUsed(isset($accountData['inodes']) ? ((float) $accountData['inodes']) : null)
+            ->setLimit($accountData['inodeslimit'] === 'Unlimited' ? null : $accountData['inodeslimit']);
 
         return UsageData::create()
             ->setDiskMb($disk)
