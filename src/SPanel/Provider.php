@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\SharedHosting\SPanel;
 
-use GuzzleHttp\Exception\ClientException;
 use Throwable;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
@@ -72,7 +71,7 @@ class Provider extends Category implements ProviderInterface
         try {
             $this->api()->createAccount($params, $username);
 
-            return $this->_getInfo($params->username, 'Account created');
+            return $this->_getInfo($username, 'Account created');
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -95,8 +94,9 @@ class Provider extends Category implements ProviderInterface
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \RuntimeException
+     * @throws \Throwable
      */
-    protected function _getInfo(string $username, string $message): AccountInfo
+    protected function _getInfo(?string $username, string $message): AccountInfo
     {
         $info = $this->api()->getAccountData($username);
 
@@ -127,8 +127,7 @@ class Provider extends Category implements ProviderInterface
         try {
             $usage = $this->api()->getAccountUsage($params->username);
 
-            return AccountUsage::create()
-                ->setUsageData($usage);
+            return AccountUsage::create()->setUsageData($usage);
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -186,10 +185,7 @@ class Provider extends Category implements ProviderInterface
         try {
             $this->api()->updatePackage($params->username, $params->package_name);
 
-            return $this->_getInfo(
-                $params->username,
-                'Package changed'
-            );
+            return $this->_getInfo($params->username, 'Package changed');
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -288,10 +284,10 @@ class Provider extends Category implements ProviderInterface
 
     protected function api(): Api
     {
-        if (isset($this->api)) {
-            return $this->api;
+        if ($this->api === null) {
+            $this->api = new Api($this->configuration, $this->getGuzzleHandlerStack());
         }
 
-        return $this->api = new Api($this->configuration, $this->getGuzzleHandlerStack());
+        return $this->api;
     }
 }
