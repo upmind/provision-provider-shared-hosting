@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\SharedHosting\Webuzo;
 
-use Illuminate\Support\Arr;
+use JsonException;
 use Upmind\ProvisionBase\Helper;
 use GuzzleHttp\Client;
-use RuntimeException;
-use Illuminate\Support\Str;
-use Upmind\ProvisionProviders\SharedHosting\Data\AccountInfo;
 use Upmind\ProvisionProviders\SharedHosting\Data\CreateParams;
 use Upmind\ProvisionProviders\SharedHosting\Data\UnitsConsumed;
 use Upmind\ProvisionProviders\SharedHosting\Data\UsageData;
@@ -19,7 +16,6 @@ use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 class Api
 {
     private Configuration $configuration;
-
     protected Client $client;
 
     public function __construct(Client $client, Configuration $configuration)
@@ -36,11 +32,10 @@ class Api
         string  $command,
         ?array  $body = null,
         ?string $method = 'POST'
-    ): ?array
-    {
+    ): ?array {
         $requestParams = [];
 
-        if ($command == 'sso') {
+        if ($command === 'sso') {
             $requestParams['query']['loginAs'] = $body['username'];
             $requestParams['query']['noip'] = 1;
         }
@@ -104,6 +99,10 @@ class Api
         return null;
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function createAccount(CreateParams $params, string $username, bool $asReseller): void
     {
         $password = $params->password ?: Helper::generatePassword();
@@ -126,8 +125,8 @@ class Api
     }
 
     /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \RuntimeException
      */
     public function getAccountData(string $username): array
     {
@@ -170,8 +169,8 @@ class Api
     }
 
     /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \RuntimeException
      */
     public function getAccountUsage(string $username): UsageData
     {
@@ -179,22 +178,22 @@ class Api
 
         $disk = UnitsConsumed::create()
             ->setUsed((int)$account['disk']['used_bytes'] / (1024 * 1024))
-            ->setLimit(($account['disk']['limit_bytes'] == 0 || $account['disk']['limit_bytes'] == 'unlimited')
+            ->setLimit(($account['disk']['limit_bytes'] == 0 || $account['disk']['limit_bytes'] === 'unlimited')
                 ? null : (int)$account['disk']['limit_bytes'] / (1024 * 1024));
 
         $bandwidth = UnitsConsumed::create()
             ->setUsed((int)$account['bandwidth']['used_bytes'] / (1024 * 1024))
-            ->setLimit(($account['bandwidth']['limit_bytes'] == 0 || $account['bandwidth']['limit_bytes'] == 'unlimited')
+            ->setLimit(($account['bandwidth']['limit_bytes'] == 0 || $account['bandwidth']['limit_bytes'] === 'unlimited')
                 ? null : (int)$account['bandwidth']['limit_bytes'] / (1024 * 1024));
 
         $inodes = UnitsConsumed::create()
             ->setUsed((int)$account['inode']['used'])
-            ->setLimit($account['inode']['limit'] == 'unlimited'
+            ->setLimit($account['inode']['limit'] === 'unlimited'
                 ? null : (int)$account['inode']['limit']);
 
         $mailboxes = UnitsConsumed::create()
             ->setUsed((int)$account['email_account']['used'])
-            ->setLimit($account['email_account']['limit'] == 'unlimited'
+            ->setLimit($account['email_account']['limit'] === 'unlimited'
                 ? null : (int)$account['email_account']['limit']);
 
         return UsageData::create()
@@ -205,8 +204,8 @@ class Api
     }
 
     /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \RuntimeException
      */
     public function suspendAccount(string $username): void
     {
@@ -218,8 +217,8 @@ class Api
     }
 
     /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \RuntimeException
      */
     public function unsuspendAccount(string $username): void
     {
@@ -231,8 +230,8 @@ class Api
     }
 
     /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \RuntimeException
      */
     public function deleteAccount(string $username): void
     {
@@ -244,8 +243,8 @@ class Api
     }
 
     /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \RuntimeException
      */
     public function updatePackage(string $username, string $package): void
     {
@@ -264,8 +263,8 @@ class Api
     }
 
     /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \RuntimeException
      */
     public function updatePassword(string $username, string $password): void
     {
@@ -286,8 +285,8 @@ class Api
     }
 
     /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \RuntimeException
      */
     public function getLoginUrl(string $username): string
     {
@@ -300,7 +299,11 @@ class Api
         return $response['done']['url'];
     }
 
-    public function setReseller(string $username, int $isReseller)
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function setReseller(string $username, int $isReseller): void
     {
         $account = $this->getUserDetails($username);
 
