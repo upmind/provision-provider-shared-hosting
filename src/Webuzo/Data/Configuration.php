@@ -10,9 +10,9 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
 /**
  * Webuzo API credentials.
  * @property-read string $hostname API hostname
- * @property-read string $api_key API key
- * @property-read string $username Username
- * @property-read string $password Password
+ * @property-read string|null $api_key API key
+ * @property-read string|null $username Username
+ * @property-read string|null $password Password
  */
 class Configuration extends DataSet
 {

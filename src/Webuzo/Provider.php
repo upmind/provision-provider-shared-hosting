@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\SharedHosting\Webuzo;
 
 use GuzzleHttp\Client;
-use Carbon\Carbon;
 use Throwable;
-use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionProviders\SharedHosting\Category;
@@ -32,15 +30,8 @@ class Provider extends Category implements ProviderInterface
 {
     protected const MAX_USERNAME_LENGTH = 10;
 
-    /**
-     * @var Configuration
-     */
-    protected $configuration;
-
-    /**
-     * @var Api|null
-     */
-    protected $api;
+    protected Configuration $configuration;
+    protected ?Api $api = null;
 
     public function __construct(Configuration $configuration)
     {
@@ -63,7 +54,6 @@ class Provider extends Category implements ProviderInterface
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \Throwable
      */
     public function create(CreateParams $params): AccountInfo
     {
@@ -109,7 +99,6 @@ class Provider extends Category implements ProviderInterface
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \Throwable
      */
     public function getInfo(AccountUsername $params): AccountInfo
     {
@@ -122,7 +111,6 @@ class Provider extends Category implements ProviderInterface
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \Throwable
      */
     public function getUsage(AccountUsername $params): AccountUsage
     {
@@ -137,7 +125,6 @@ class Provider extends Category implements ProviderInterface
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \Throwable
      */
     public function getLoginUrl(GetLoginUrlParams $params): LoginUrl
     {
@@ -156,7 +143,6 @@ class Provider extends Category implements ProviderInterface
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \Throwable
      */
     public function changePassword(ChangePasswordParams $params): EmptyResult
     {
@@ -170,7 +156,6 @@ class Provider extends Category implements ProviderInterface
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \Throwable
      */
     public function changePackage(ChangePackageParams $params): AccountInfo
     {
@@ -187,7 +172,6 @@ class Provider extends Category implements ProviderInterface
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \Throwable
      */
     public function suspend(SuspendParams $params): AccountInfo
     {
@@ -201,7 +185,6 @@ class Provider extends Category implements ProviderInterface
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \Throwable
      */
     public function unSuspend(AccountUsername $params): AccountInfo
     {
@@ -215,7 +198,6 @@ class Provider extends Category implements ProviderInterface
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \Throwable
      */
     public function terminate(AccountUsername $params): EmptyResult
     {
@@ -227,6 +209,7 @@ class Provider extends Category implements ProviderInterface
     /**
      * @inheritDoc
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function grantReseller(GrantResellerParams $params): ResellerPrivileges
@@ -241,6 +224,7 @@ class Provider extends Category implements ProviderInterface
     /**
      * @inheritDoc
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function revokeReseller(AccountUsername $params): ResellerPrivileges
@@ -255,6 +239,7 @@ class Provider extends Category implements ProviderInterface
     /**
      * @return no-return
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
@@ -272,7 +257,7 @@ class Provider extends Category implements ProviderInterface
 
         $auth = '';
 
-        if (isset($this->configuration->username) && isset($this->configuration->password)) {
+        if (isset($this->configuration->username, $this->configuration->password)) {
             $auth = $this->configuration->username . ':' . $this->configuration->password . '@';
         }
 
