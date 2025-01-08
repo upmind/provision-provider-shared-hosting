@@ -20,9 +20,9 @@ class Configuration extends DataSet
     {
         return new Rules([
             'hostname' => ['required', 'string'],
-            'api_key' => ['required_without_all:username,password', 'string'],
-            'username' => ['required_without:api_key', 'string'],
-            'password' => ['required_without:api_key', 'string'],
+            'api_key' => ['required_without_all:username,password', 'nullable', 'string'],
+            'username' => ['required_without:api_key', 'nullable', 'string'],
+            'password' => ['required_without:api_key', 'nullable', 'string'],
         ]);
     }
 }

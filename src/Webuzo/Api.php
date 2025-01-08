@@ -35,7 +35,7 @@ class Api
     public function makeRequest(
         string  $command,
         ?array  $body = null,
-        ?string $method = 'POST',
+        ?string $method = 'POST'
     ): ?array
     {
         $requestParams = [];
@@ -96,7 +96,7 @@ class Api
         if (isset($response['error'])) {
             $message = '';
             foreach ($response['error'] as $error) {
-                $message .= $error . '; ';
+                $message .= strip_tags($error) . '; ';
             }
             return $message;
         }
@@ -192,10 +192,16 @@ class Api
             ->setLimit($account['inode']['limit'] == 'unlimited'
                 ? null : (int)$account['inode']['limit']);
 
+        $mailboxes = UnitsConsumed::create()
+            ->setUsed((int)$account['email_account']['used'])
+            ->setLimit($account['email_account']['limit'] == 'unlimited'
+                ? null : (int)$account['email_account']['limit']);
+
         return UsageData::create()
             ->setDiskMb($disk)
             ->setBandwidthMb($bandwidth)
-            ->setInodes($inodes);
+            ->setInodes($inodes)
+            ->setMailboxes($mailboxes);
     }
 
     /**
