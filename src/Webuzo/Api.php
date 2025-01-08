@@ -74,7 +74,14 @@ class Api
      */
     private function parseResponseData(string $response): array
     {
-        $parsedResult = json_decode($response, true);
+        try {
+            $parsedResult = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            throw ProvisionFunctionError::create('Failed to parse response data', $e)
+                ->withData([
+                    'response' => $response,
+                ]);
+        }
 
         if ($error = $this->getResponseErrorMessage($parsedResult)) {
             throw ProvisionFunctionError::create($error)
