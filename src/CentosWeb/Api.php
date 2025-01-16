@@ -34,7 +34,7 @@ class Api
     public function makeRequest(
         string  $command,
         ?array  $body = null,
-        ?string $method = 'POST',
+        ?string $method = 'POST'
     ): ?array {
         $requestParams = [];
 
