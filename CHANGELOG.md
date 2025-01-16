@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.6.20](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.20) - 2025-01-16
+
+- Fix Centos Web Panel PHP 7.4 compatibility
+
 ## [v6.6.19](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.19) - 2024-12-22
 
 - Implement CentOS Web Panel (CWP) provider
