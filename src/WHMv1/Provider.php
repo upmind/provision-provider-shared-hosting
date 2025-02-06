@@ -355,10 +355,8 @@ class Provider extends SharedHosting implements ProviderInterface
             }
 
             $this->changeResellerOptions($params->username, $params->reseller_options ?? new ResellerOptionParams());
-        } else {
-            if ($isReseller) {
-                $this->revokeReseller(AccountUsername::create($params));
-            }
+        } elseif ($isReseller) {
+            $this->revokeReseller(AccountUsername::create($params));
         }
 
         $response = $this->makeApiCall('POST', 'changepackage', [
