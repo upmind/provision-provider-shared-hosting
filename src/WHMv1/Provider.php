@@ -983,6 +983,7 @@ class Provider extends SharedHosting implements ProviderInterface
 
             if ($e instanceof TransferException) {
                 if ($e instanceof RequestException && $e->hasResponse()) {
+                    /** @var \Psr\Http\Message\ResponseInterface $response */
                     $response = $e->getResponse();
                     $responseBody = $response->getBody()->__toString();
                     $resultData = json_decode($responseBody, true);
