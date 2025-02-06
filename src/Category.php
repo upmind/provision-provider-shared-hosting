@@ -48,7 +48,7 @@ abstract class Category extends BaseCategory
 
     /**
      * Gets information about a hosting account such as the main domain name,
-     * whether or not it is suspended, the hostname of it's server, nameservers
+     * whether, or not, it is suspended, the hostname of it's server, nameservers
      * etc.
      */
     abstract public function getInfo(AccountUsername $params): AccountInfo;
