@@ -49,22 +49,15 @@ class Provider extends SharedHosting implements ProviderInterface
      */
     protected const MAX_USERNAME_GENERATION_ATTEMPTS = 5;
 
-    /**
-     * @var WHMv1Credentials
-     */
-    protected $configuration;
-
-    /**
-     * @var Client|null
-     */
-    protected $client;
+    protected WHMv1Credentials $configuration;
+    protected ?Client $client = null;
 
     /**
      * List of whm functions available to this configuration.
      *
      * @var string[]|null
      */
-    protected $functions;
+    protected ?array $functions = null;
 
     public function __construct(WHMv1Credentials $configuration)
     {
