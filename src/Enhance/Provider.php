@@ -443,9 +443,16 @@ class Provider extends Category implements ProviderInterface
             throw $this->errorResult('Subscription terminated', ['subscription' => $subscription->jsonSerialize()]);
         }
 
-        $nameservers = array_map(function (DomainIp $ns) {
-            return $ns->getDomain();
-        }, $this->api()->branding()->getBranding($this->configuration->org_id)->getNameServers());
+        if ($this->isEnhanceVersion('12.0.0')) {
+            $nameservers = array_map(function ($ns) {
+                /** @var DomainIp|string $ns */
+                return $ns instanceof DomainIp ? $ns->getDomain() : $ns;
+            }, $this->api()->branding()->getBranding($this->configuration->org_id)->getNameServers());
+        } else {
+            // Backwards incompatible change in Enhance v12 to branding API causes this to break
+            // Let's just return empty nameservers to avoid errors in older versions
+            $nameservers = [];
+        }
 
         if ($website) {
             if ($serverGroup = $this->findServerGroupByWebsite($website)) {
@@ -680,7 +687,6 @@ class Provider extends Category implements ProviderInterface
                 $customerId,
                 $offset,
                 $limit,
-                null,
                 null,
                 null,
                 Role::OWNER
