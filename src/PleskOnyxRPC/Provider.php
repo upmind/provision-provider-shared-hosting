@@ -1178,6 +1178,8 @@ class Provider extends SharedHosting implements ProviderInterface
                 }
             }
 
+            natsort($records);
+
             return array_values(array_unique($records));
         } catch (PleskException | PleskClientException | ProviderError $e) {
             return $this->handleException($e, 'Get dns records', ['domain_id' => $domainId, 'type' => $type]);
@@ -1215,6 +1217,8 @@ class Provider extends SharedHosting implements ProviderInterface
                 $this->getDnsRecords($client, $domain['id'], 'NS')
             );
         }
+
+        natsort($domainNameServers);
 
         return array_values(array_unique($domainNameServers));
     }
