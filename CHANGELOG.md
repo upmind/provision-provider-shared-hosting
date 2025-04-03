@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.6.22](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.22) - 2025-04-03
+
+- Apply natsort to nameservers before returning them in Plesk provider
+
 ## [v6.6.21](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.21) - 2025-02-19
 
 - Update upmind/enhance-sdk to v12
