@@ -199,7 +199,7 @@ class Provider extends SharedHosting implements ProviderInterface
             throw $e;
         }
 
-        return $this->getInfo(new AccountUsername(['subscription_id' => $webspace->id, 'username' => $login]))
+        return $this->getInfo(new AccountUsername(['username' => $login]))
             ->setMessage('Subscription created')
             ->setDebug(['customer' => $newCustomer ?? $customerId, 'webspace' => $webspace]);
     }
@@ -443,28 +443,12 @@ class Provider extends SharedHosting implements ProviderInterface
         $client = $this->getClient();
 
         try {
-            if ($params->subscription_id || $params->domain) {
-                if ($params->subscription_id) {
-                    // find webspace by guuid
-                    $subscriptionId = $params->subscription_id;
-                    $webspaceInfo = $this->getWebspaceInfo($client, $params->subscription_id);
-                    $domainInfo = $this->getDomainInfo($client, $webspaceInfo->data->gen_info->getValue('name'));
-                    $customerId = $webspaceInfo->data->gen_info->getValue('owner-id');
-                } else {
-                    // find webspace by domain
-                    $domainInfo = $this->getDomainInfo($client, $params->domain);
-                    $subscriptionId = $domainInfo->data->gen_info->getValue('webspace-id');
-                    $webspaceInfo = $this->getWebspaceInfo($client, $subscriptionId);
-                    $customerId = $webspaceInfo->data->gen_info->getValue('owner-id');
-                }
-
-                // if ($params->customer_id && $params->customer_id != $customerId) {
-                //     throw $this->errorResult('Subscription does not belong to given customer', [
-                //         'customer_id' => $params->customer_id,
-                //         'subscription_id' => $subscriptionId,
-                //         'subscription_customer_id' => $customerId,
-                //     ]);
-                // }
+            if ($params->domain) {
+                // find webspace by domain
+                $domainInfo = $this->getDomainInfo($client, $params->domain);
+                $subscriptionId = $domainInfo->data->gen_info->getValue('webspace-id');
+                $webspaceInfo = $this->getWebspaceInfo($client, $subscriptionId);
+                $customerId = $webspaceInfo->data->gen_info->getValue('owner-id');
 
                 $customerInfo = $this->getCustomerInfo($client, $customerId);
                 $username = $customerInfo->data->gen_info->getValue('login');
@@ -486,7 +470,6 @@ class Provider extends SharedHosting implements ProviderInterface
                 return AccountInfo::create([
                     'customer_id' => $customerId,
                     'username' => $username,
-                    'subscription_id' => $subscriptionId,
                     'domain' => $domainInfo->data->gen_info->getValue('name'),
                     'reseller' => false,
                     'server_hostname' => $this->configuration->hostname,
@@ -679,11 +662,7 @@ class Provider extends SharedHosting implements ProviderInterface
             ]
         ];
 
-        if ($params->subscription_id) {
-            $webspaceRequest['switch-subscription']['filter'] = [
-                'id' => $params->subscription_id
-            ];
-        } elseif ($params->domain) {
+        if ($params->domain) {
             $webspaceRequest['switch-subscription']['filter'] = [
                 'name' => $params->domain
             ];
@@ -802,11 +781,11 @@ class Provider extends SharedHosting implements ProviderInterface
         $client = $this->getClient();
 
         try {
-            if ($params->subscription_id || $params->domain) {
+            if ($params->domain) {
                 $requestParams = [
                     'set' => [
                         'filter' => [
-                            'id' => $params->subscription_id,
+                            'name' => $params->domain
                         ],
                         'values' => [
                             'gen_setup' => [
@@ -816,12 +795,6 @@ class Provider extends SharedHosting implements ProviderInterface
                         ]
                     ]
                 ];
-
-                if (!$params->subscription_id) {
-                    $requestParams['set']['filter'] = [
-                        'name' => $params->domain,
-                    ];
-                }
 
                 $client->webspace()->request($requestParams);
             } else {
@@ -897,11 +870,11 @@ class Provider extends SharedHosting implements ProviderInterface
         $client = $this->getClient();
 
         try {
-            if ($params->subscription_id || $params->domain) {
+            if ($params->domain) {
                 $requestParams = [
                     'set' => [
                         'filter' => [
-                            'id' => $params->subscription_id,
+                            'name' => $params->domain,
                         ],
                         'values' => [
                             'gen_setup' => [
@@ -911,12 +884,6 @@ class Provider extends SharedHosting implements ProviderInterface
                         ]
                     ]
                 ];
-
-                if (!$params->subscription_id) {
-                    $requestParams['set']['filter'] = [
-                        'name' => $params->domain,
-                    ];
-                }
 
                 $client->webspace()->request($requestParams);
             } else {
@@ -1041,9 +1008,7 @@ class Provider extends SharedHosting implements ProviderInterface
         $client = $this->getClient();
 
         try {
-            if ($params->subscription_id) {
-                $client->webspace()->delete('id', $params->subscription_id);
-            } elseif ($params->domain) {
+            if ($params->domain) {
                 $client->webspace()->delete('name', $params->domain);
             } else {
                 $client->customer()->delete('login', $username);
