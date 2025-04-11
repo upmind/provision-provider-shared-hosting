@@ -2,6 +2,12 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.10.2](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.10.2) - 2025-04-11
+
+- To avoid issues after migrating accounts from one server to another, remove
+  use of `subscription_id` in Plesk provider
+- Fix some type errors with reseller accounts in Plesk provider
+
 ## [v6.10.1](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.10.1) - 2025-04-03
 
 - Apply natsort to nameservers before returning them in Plesk provider
@@ -96,6 +102,12 @@ All notable changes to the package will be documented in this file.
 - Update for PHP 8.1
 - Update base lib to v4
 - Update 20i SDK to v1.1
+
+## [v6.6.23](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.23) - 2025-04-11
+
+- To avoid issues after migrating accounts from one server to another, remove
+  use of `subscription_id` in Plesk provider
+- Fix some type errors with reseller accounts in Plesk provider
 
 ## [v6.6.22](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.22) - 2025-04-03
 
