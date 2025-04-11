@@ -330,7 +330,9 @@ class Provider extends SharedHosting implements ProviderInterface
         $plan = 'Custom'; // plan quotas / settings don't change
 
         if ($this->loginBelongsToReseller($username)) {
-            return $this->emptyResult('Account is already a reseller');
+            return ResellerPrivileges::create()
+                ->setMessage('Account is already a reseller')
+                ->setReseller(true);
         }
 
         if ($plan !== 'Custom') {
@@ -370,7 +372,9 @@ class Provider extends SharedHosting implements ProviderInterface
         $plan = 'Custom'; // plan quotas / settings don't change
 
         if (! $this->loginBelongsToReseller($username)) {
-            return $this->emptyResult('Account is already not a reseller');
+            return ResellerPrivileges::create()
+                ->setMessage('Account is already not a reseller')
+                ->setReseller(false);
         }
 
         if ($plan !== 'Custom') {
@@ -617,7 +621,10 @@ class Provider extends SharedHosting implements ProviderInterface
         $plan = $params->package_name;
 
         if ($this->loginBelongsToReseller($username)) {
-            return $this->changeResellerPackage($username, $plan);
+            $this->changeResellerPackage($username, $plan);
+
+            return $this->getInfo(AccountUsername::create($params))
+                ->setMessage('Reseller package changed');
         }
 
         $client = $this->getClient();
