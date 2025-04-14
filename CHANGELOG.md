@@ -2,6 +2,16 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.6.24](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.24) - 2025-04-14
+
+- Prevent login or change password of the admin/root username in the following providers:
+  - CentosWeb
+  - DirectAdmin
+  - InterWorx
+  - Plesk
+  - SolidCP
+  - cPanel/WHM
+
 ## [v6.6.23](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.23) - 2025-04-11
 
 - To avoid issues after migrating accounts from one server to another, remove
