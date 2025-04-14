@@ -714,6 +714,8 @@ class Provider extends SharedHosting implements ProviderInterface
      */
     public function getLoginUrl(GetLoginUrlParams $params): LoginUrl
     {
+        $this->assertNotRoot($params->username);
+
         $username = $params->username;
         $user_ip = $params->user_ip;
 
@@ -934,6 +936,8 @@ class Provider extends SharedHosting implements ProviderInterface
      */
     public function changePassword(ChangePasswordParams $params): EmptyResult
     {
+        $this->assertNotRoot($params->username);
+
         $username = $params->username;
         $password = $params->password;
 
@@ -1033,6 +1037,24 @@ class Provider extends SharedHosting implements ProviderInterface
             return $this->emptyResult('Reseller deleted');
         } catch (PleskException | PleskClientException | ProviderError $e) {
             $this->handleException($e, 'Delete reseller');
+        }
+    }
+
+    /**
+     * @param string $username
+     */
+    protected function assertNotRoot($username)
+    {
+        if (0 === strcasecmp(trim((string)$username), $this->configuration->admin_username)) {
+            $this->errorResult('Cannot perform this action on configuration user itself');
+        }
+
+        if (0 === strcasecmp(trim((string)$username), 'root')) {
+            $this->errorResult('Cannot perform this action on root');
+        }
+
+        if (0 === strcasecmp(trim((string)$username), 'administrator')) {
+            $this->errorResult('Cannot perform this action on root');
         }
     }
 

@@ -116,6 +116,8 @@ class Provider extends Category implements ProviderInterface
      */
     public function getLoginUrl(GetLoginUrlParams $params): LoginUrl
     {
+        $this->assertNotRoot($params->username);
+
         $portalUrl = $this->configuration->portal_url;
         $password = $params->current_password;
 
@@ -171,6 +173,8 @@ class Provider extends Category implements ProviderInterface
      */
     public function changePassword(ChangePasswordParams $params): EmptyResult
     {
+        $this->assertNotRoot($params->username);
+
         $this->updateUserPassword($params->username, $params->password);
         return $this->emptyResult('Password changed');
     }
@@ -314,6 +318,20 @@ class Provider extends Category implements ProviderInterface
             'ip' => $ip ?? null,
             'nameservers' => $nameservers ?? null,
         ]);
+    }
+
+    /**
+     * @param string $username
+     */
+    protected function assertNotRoot($username)
+    {
+        if (0 === strcasecmp(trim((string)$username), $this->configuration->username)) {
+            $this->errorResult('Cannot perform this action on configuration user itself');
+        }
+
+        if (0 === strcasecmp(trim((string)$username), 'root')) {
+            $this->errorResult('Cannot perform this action on root');
+        }
     }
 
     /**

@@ -146,6 +146,8 @@ class Provider extends Category implements ProviderInterface
      */
     public function getLoginUrl(GetLoginUrlParams $params): LoginUrl
     {
+        $this->assertNotRoot($params->username);
+
         $timer = 30;
         $loginUrl = $this->api()->getLoginUrl($params->username, $timer);
 
@@ -163,6 +165,8 @@ class Provider extends Category implements ProviderInterface
      */
     public function changePassword(ChangePasswordParams $params): EmptyResult
     {
+        $this->assertNotRoot($params->username);
+
         $this->api()->updatePassword($params->username, $params->password);
 
         return $this->emptyResult('Password changed');
@@ -246,6 +250,16 @@ class Provider extends Category implements ProviderInterface
     public function revokeReseller(AccountUsername $params): ResellerPrivileges
     {
         $this->errorResult('Operation not supported');
+    }
+
+    /**
+     * @param string $username
+     */
+    protected function assertNotRoot($username)
+    {
+        if (0 === strcasecmp(trim((string)$username), 'root')) {
+            $this->errorResult('Cannot perform this action on root');
+        }
     }
 
     /**
