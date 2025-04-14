@@ -171,6 +171,8 @@ class Provider extends Category implements ProviderInterface
      */
     public function getLoginUrl(GetLoginUrlParams $params): LoginUrl
     {
+        $this->assertNotRoot($params->username);
+
         $url = sprintf(
             'https://%s:%s/%s/',
             $this->configuration->hostname,
@@ -190,6 +192,8 @@ class Provider extends Category implements ProviderInterface
      */
     public function changePassword(ChangePasswordParams $params): EmptyResult
     {
+        $this->assertNotRoot($params->username);
+
         try {
             $domain = $this->api()->getDomainName($params->username);
 
@@ -308,8 +312,24 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @throws ProvisionFunctionError
-     * @throws Throwable
+     * @param string $username
+     */
+    protected function assertNotRoot($username)
+    {
+        if (0 === strcasecmp(trim((string)$username), $this->configuration->username)) {
+            $this->errorResult('Cannot perform this action on configuration user itself');
+        }
+
+        if (0 === strcasecmp(trim((string)$username), 'root')) {
+            $this->errorResult('Cannot perform this action on root');
+        }
+    }
+
+    /**
+     * @return no-return
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     protected function handleException(Throwable $e, array $data = [], array $debug = [], ?string $message = null): void
     {
