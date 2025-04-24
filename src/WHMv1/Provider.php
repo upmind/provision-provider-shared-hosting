@@ -949,10 +949,6 @@ class Provider extends SharedHosting implements ProviderInterface
      */
     protected function assertNotRoot($username)
     {
-        if (0 === strcasecmp(trim((string)$username), $this->configuration->whm_username)) {
-            $this->errorResult('Cannot perform this action on configuration user itself');
-        }
-
         if (0 === strcasecmp(trim((string)$username), 'root')) {
             $this->errorResult('Cannot perform this action on root');
         }
