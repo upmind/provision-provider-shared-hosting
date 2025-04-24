@@ -2,6 +2,15 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.10.4](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.10.4) - 2025-04-24
+
+- Relax username restrictions around login/changePassword() to allow the configuration username in:
+  - CentosWeb
+  - InterWorx
+  - Plesk
+  - SolidCP
+  - cPanel/WHM
+
 ## [v6.10.3](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.10.3) - 2025-04-14
 
 - Prevent login or change password of the admin/root username in the following providers:
@@ -112,6 +121,15 @@ All notable changes to the package will be documented in this file.
 - Update for PHP 8.1
 - Update base lib to v4
 - Update 20i SDK to v1.1
+
+## [v6.6.25](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.25) - 2025-04-24
+
+- Relax username restrictions around login/changePassword() to allow the configuration username in:
+  - CentosWeb
+  - InterWorx
+  - Plesk
+  - SolidCP
+  - cPanel/WHM
 
 ## [v6.6.24](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.24) - 2025-04-14
 
