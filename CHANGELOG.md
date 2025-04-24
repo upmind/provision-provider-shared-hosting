@@ -2,6 +2,15 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.6.25](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.25) - 2025-04-24
+
+- Relax username restrictions around login/changePassword() to allow the configuration username in:
+  - CentosWeb
+  - InterWorx
+  - Plesk
+  - SolidCP
+  - cPanel/WHM
+
 ## [v6.6.24](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.24) - 2025-04-14
 
 - Prevent login or change password of the admin/root username in the following providers:
