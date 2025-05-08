@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.6.26](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.26) - 2025-05-08
+
+- Update upmind/enhance-sdk to v12.3.0
+
 ## [v6.6.25](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.25) - 2025-04-24
 
 - Relax username restrictions around login/changePassword() to allow the configuration username in:
