@@ -19,7 +19,7 @@
         "upmind/provision-provider-base": "^3.6",
         "plesk/api-php-lib": "^1.1",
         "upmind/20i-php-sdk": "^1.0",
-        "upmind/enhance-sdk": "^12.0",
+        "upmind/enhance-sdk": "^12.3.0",
         "giggsey/libphonenumber-for-php-lite": "^8"
     },
     "extra": {
