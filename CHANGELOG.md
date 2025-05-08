@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.10.5](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.10.5) - 2025-05-08
+
+- Update upmind/enhance-sdk to v12.3.0
+
 ## [v6.10.4](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.10.4) - 2025-04-24
 
 - Relax username restrictions around login/changePassword() to allow the configuration username in:
@@ -121,6 +125,10 @@ All notable changes to the package will be documented in this file.
 - Update for PHP 8.1
 - Update base lib to v4
 - Update 20i SDK to v1.1
+
+## [v6.6.25](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.25) - 2025-05-08
+
+- Update upmind/enhance-sdk to v12.3.0
 
 ## [v6.6.25](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.25) - 2025-04-24
 
