@@ -410,6 +410,8 @@ class Provider extends SharedHosting implements ProviderInterface
      */
     public function getLoginUrl(GetLoginUrlParams $params): LoginUrl
     {
+        $this->assertNotRoot($params->username);
+
         $user = $params->username;
         $whm = $params->is_reseller ?? false;
         $service = $whm ? 'whostmgrd' : 'cpaneld';
@@ -515,6 +517,8 @@ class Provider extends SharedHosting implements ProviderInterface
      */
     public function changePassword(ChangePasswordParams $params): EmptyResult
     {
+        $this->assertNotRoot($params->username);
+
         $user = $params->username;
         $password = $params->password;
         $requestParams = compact('user', 'password');
@@ -1043,6 +1047,16 @@ class Provider extends SharedHosting implements ProviderInterface
         return new SoftaculousSdk($username, $password, $this->configuration, new Client([
             'handler' => $this->getGuzzleHandlerStack(),
         ]));
+    }
+
+    /**
+     * @param string $username
+     */
+    protected function assertNotRoot($username)
+    {
+        if (0 === strcasecmp(trim((string)$username), 'root')) {
+            $this->errorResult('Cannot perform this action on root');
+        }
     }
 
     protected function getClient(): Client

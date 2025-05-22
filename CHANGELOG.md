@@ -2,6 +2,39 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.10.5](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.10.5) - 2025-05-08
+
+- Update upmind/enhance-sdk to v12.3.0
+
+## [v6.10.4](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.10.4) - 2025-04-24
+
+- Relax username restrictions around login/changePassword() to allow the configuration username in:
+  - CentosWeb
+  - InterWorx
+  - Plesk
+  - SolidCP
+  - cPanel/WHM
+
+## [v6.10.3](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.10.3) - 2025-04-14
+
+- Prevent login or change password of the admin/root username in the following providers:
+  - CentosWeb
+  - DirectAdmin
+  - InterWorx
+  - Plesk
+  - SolidCP
+  - cPanel/WHM
+
+## [v6.10.2](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.10.2) - 2025-04-11
+
+- To avoid issues after migrating accounts from one server to another, remove
+  use of `subscription_id` in Plesk provider
+- Fix some type errors with reseller accounts in Plesk provider
+
+## [v6.10.1](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.10.1) - 2025-04-03
+
+- Apply natsort to nameservers before returning them in Plesk provider
+
 ## [v6.10.0](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.10.0) - 2025-02-19
 
 - Update upmind/enhance-sdk to v12
@@ -92,6 +125,39 @@ All notable changes to the package will be documented in this file.
 - Update for PHP 8.1
 - Update base lib to v4
 - Update 20i SDK to v1.1
+
+## [v6.6.26](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.26) - 2025-05-08
+
+- Update upmind/enhance-sdk to v12.3.0
+
+## [v6.6.25](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.25) - 2025-04-24
+
+- Relax username restrictions around login/changePassword() to allow the configuration username in:
+  - CentosWeb
+  - InterWorx
+  - Plesk
+  - SolidCP
+  - cPanel/WHM
+
+## [v6.6.24](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.24) - 2025-04-14
+
+- Prevent login or change password of the admin/root username in the following providers:
+  - CentosWeb
+  - DirectAdmin
+  - InterWorx
+  - Plesk
+  - SolidCP
+  - cPanel/WHM
+
+## [v6.6.23](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.23) - 2025-04-11
+
+- To avoid issues after migrating accounts from one server to another, remove
+  use of `subscription_id` in Plesk provider
+- Fix some type errors with reseller accounts in Plesk provider
+
+## [v6.6.22](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.22) - 2025-04-03
+
+- Apply natsort to nameservers before returning them in Plesk provider
 
 ## [v6.6.21](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.21) - 2025-02-19
 
