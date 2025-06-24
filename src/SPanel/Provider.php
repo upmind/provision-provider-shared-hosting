@@ -163,17 +163,6 @@ class Provider extends Category implements ProviderInterface
         }
     }
 
-
-    function isValidPassword($password)
-    {
-        if (strlen($password) >= 8 && preg_match('/[a-zA-Z]/', $password) && preg_match('/\d/', $password)) {
-            return true;
-        }
-
-        return false;
-    }
-
-
     /**
      * @inheritDoc
      *
@@ -289,5 +278,10 @@ class Provider extends Category implements ProviderInterface
         }
 
         return $this->api;
+    }
+
+    private function isValidPassword($password): bool
+    {
+        return strlen($password) >= 8 && preg_match('/[a-zA-Z]/', $password) && preg_match('/\d/', $password);
     }
 }
