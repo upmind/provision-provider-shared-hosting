@@ -229,7 +229,7 @@ class Api
             ->setUsed(isset($accountData['inodes']) ? ((float) $accountData['inodes']) : null)
             ->setLimit(isset($accountData['inodeslimit']) && $accountData['inodeslimit'] === 'Unlimited'
                 ? null
-                : $accountData['inodeslimit']
+                : (int) $accountData['inodeslimit']
             );
 
         return UsageData::create()
