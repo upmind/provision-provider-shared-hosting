@@ -147,10 +147,20 @@ class Api
 
         $response = $this->makeRequest($body);
 
+        // First check if we got a valid response.
+        if ($response === null || !isset($response['data'])) {
+            throw ProvisionFunctionError::create('Empty API Response');
+        }
+
+        // Check if data is an array and not empty
+        if (!is_array($response['data']) || empty($response['data'])) {
+            throw ProvisionFunctionError::create('Account not found');
+        }
+
         $accountData = [];
 
         foreach($response['data'] as $data) {
-            if ($data['user'] === $username) {
+            if (isset($data['user']) && $data['user'] === $username) {
                 $accountData = $data;
             }
         }
@@ -161,13 +171,13 @@ class Api
         }
 
         return [
-            'username' => $accountData['user'],
-            'domain' => $accountData['domain'],
+            'username' => $accountData['user'] ?? null,
+            'domain' => $accountData['domain'] ?? null,
             'reseller' => false,
             'server_hostname' => $this->configuration->hostname,
-            'package_name' => $accountData['package'],
-            'suspended' => $accountData['suspended'] !== '0',
-            'ip' => $accountData['ip'],
+            'package_name' => $accountData['package'] ?? null,
+            'suspended' => isset($accountData['suspended']) && $accountData['suspended'] !== '0',
+            'ip' => $accountData['ip'] ?? null,
         ];
     }
 
@@ -185,10 +195,20 @@ class Api
 
         $response = $this->makeRequest($body);
 
+        // First check if we got a valid response.
+        if ($response === null || !isset($response['data'])) {
+            throw ProvisionFunctionError::create('Empty API Response');
+        }
+
+        // Check if data is an array and not empty
+        if (!is_array($response['data']) || empty($response['data'])) {
+            throw ProvisionFunctionError::create('Account not found');
+        }
+
         $accountData = [];
 
         foreach($response['data'] as $data) {
-            if ($data['user'] === $username) {
+            if (isset($data['user']) && $data['user'] === $username) {
                 $accountData = $data;
             }
         }
@@ -200,11 +220,17 @@ class Api
 
         $disk = UnitsConsumed::create()
             ->setUsed(isset($accountData['disk']) ? ((int)$accountData['disk']) : null)
-            ->setLimit($accountData['disklimit'] === 'Unlimited' ? null : (int) $accountData['disklimit']);
+            ->setLimit(isset($accountData['disklimit']) && $accountData['disklimit']=== 'Unlimited'
+                ? null
+                : (int) $accountData['disklimit']
+            );
 
         $inodes = UnitsConsumed::create()
             ->setUsed(isset($accountData['inodes']) ? ((float) $accountData['inodes']) : null)
-            ->setLimit($accountData['inodeslimit'] === 'Unlimited' ? null : $accountData['inodeslimit']);
+            ->setLimit(isset($accountData['inodeslimit']) && $accountData['inodeslimit'] === 'Unlimited'
+                ? null
+                : $accountData['inodeslimit']
+            );
 
         return UsageData::create()
             ->setDiskMb($disk)
