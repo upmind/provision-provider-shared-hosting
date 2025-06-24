@@ -157,13 +157,7 @@ class Api
             throw ProvisionFunctionError::create('Account not found');
         }
 
-        $accountData = [];
-
-        foreach($response['data'] as $data) {
-            if (isset($data['user']) && $data['user'] === $username) {
-                $accountData = $data;
-            }
-        }
+        $accountData = $this->findAccountByUsername($response['data'], $username);
 
         // If no matching result is found, throw an error
         if (empty($accountData)) {
@@ -205,13 +199,7 @@ class Api
             throw ProvisionFunctionError::create('Account not found');
         }
 
-        $accountData = [];
-
-        foreach($response['data'] as $data) {
-            if (isset($data['user']) && $data['user'] === $username) {
-                $accountData = $data;
-            }
-        }
+        $accountData = $this->findAccountByUsername($response['data'], $username);
 
         // If no matching result is found, throw an error
         if (empty($accountData)) {
@@ -312,5 +300,16 @@ class Api
         ];
 
         $this->makeRequest($body);
+    }
+
+    private function findAccountByUsername(array $data, string $username): array
+    {
+        foreach($data as $datum) {
+            if (isset($datum['user']) && $datum['user'] === $username) {
+                return $datum;
+            }
+        }
+
+        return [];
     }
 }
