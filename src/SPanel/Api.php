@@ -302,7 +302,10 @@ class Api
         $this->makeRequest($body);
     }
 
-    private function findAccountByUsername(array $data, string $username): array
+    /**
+     * @return array|mixed
+     */
+    private function findAccountByUsername(array $data, string $username)
     {
         foreach($data as $datum) {
             if (isset($datum['user']) && $datum['user'] === $username) {
