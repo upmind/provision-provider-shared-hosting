@@ -90,17 +90,27 @@ class Api
 
     private function getResponseErrorMessage(array $response): ?string
     {
-        if ($response['result'] === 'error') {
-            if (is_string($response['message'])) {
-                return $response['message'];
-            }
-
-            if (is_array($response['message'])) {
-                return implode(', ', $response['message']);
-            }
+        // First check if result is set as error, if not, return null.
+        if (!isset($response['result']) || $response['result'] !== 'error') {
+            return null;
         }
 
-        return null;
+        // If message is not set while result is error, return a generic error message.
+        if (!isset($response['message'])) {
+            return 'Unknown error occurred';
+        }
+
+        // Handle different types of message
+        if (is_string($response['message'])) {
+            return $response['message'];
+        }
+
+        if (is_array($response['message'])) {
+            return implode(', ', $response['message']);
+        }
+
+        // Otherwise, return a generic error message.
+        return 'Unknown error occurred';
     }
 
     /**
