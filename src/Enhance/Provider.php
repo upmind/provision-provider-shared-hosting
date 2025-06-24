@@ -495,7 +495,7 @@ class Provider extends Category implements ProviderInterface
 
         if ($this->isEnhanceVersion('12.0.0')) {
             $nameservers = array_map(function ($ns) {
-                /** @var \Upmind\EnhanceSdk\Model\DomainIp|string $ns */
+                /** @var DomainIp|string $ns */
                 return $ns instanceof DomainIp ? $ns->getDomain() : $ns;
             }, $this->api()->branding()->getBranding($this->configuration->org_id)->getNameServers());
         } else {
