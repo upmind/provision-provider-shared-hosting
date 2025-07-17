@@ -76,11 +76,17 @@ class Provider extends Category implements ProviderInterface
 
     protected function generateUsername(string $base): string
     {
-        return substr(
-            preg_replace('/^[^a-z]+/', '', preg_replace('/[^a-z0-9]/', '', strtolower($base))),
-            0,
-            self::MAX_USERNAME_LENGTH
-        );
+        // Lowercase
+        $username = mb_strtolower($base);
+
+        // Remove all non-alphanumeric characters
+        $username = preg_replace('/[^a-z0-9]/', '', $username);
+
+        // Remove leading non-alphabetic characters
+        $username = preg_replace('/^[^a-z]+/', '', $username);
+
+        // Limit to MAX_USERNAME_LENGTH characters
+        return substr($username, 0, self::MAX_USERNAME_LENGTH);
     }
 
     /**
