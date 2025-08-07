@@ -33,7 +33,7 @@ class Provider extends Category implements ProviderInterface
 
     protected Configuration $configuration;
     protected ?Api $api = null;
-    private bool $endUserApi = false;
+    private bool $endUserEndpoint = false;
 
     public function __construct(Configuration $configuration)
     {
@@ -257,12 +257,15 @@ class Provider extends Category implements ProviderInterface
         throw $e;
     }
 
-    protected function api(bool $endUser = false): Api
+    protected function api(bool $endUserEndpoint = false): Api
     {
         // If the API is already set, and the endUser setting matches, return it.
-        if ($this->endUserApi === $endUser && $this->api) {
+        if ($this->endUserEndpoint === $endUserEndpoint && $this->api) {
             return $this->api;
         }
+
+        // Set the endUserEndpoint flag to the current value.
+        $this->endUserEndpoint = $endUserEndpoint;
 
         // Otherwise, recreate the API instance.
         $auth = '';
@@ -277,7 +280,7 @@ class Provider extends Category implements ProviderInterface
                 'https://%s%s:%s',
                 $auth,
                 $this->configuration->hostname,
-                $endUser ? 2003 : 2005 // Different ports for end-user and admin API
+                $this->endUserEndpoint ? 2003 : 2005 // Different ports for end-user and admin API
             ),
             'headers' => [
                 'Accept' => 'application/json',
