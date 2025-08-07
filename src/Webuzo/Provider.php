@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\SharedHosting\Webuzo;
 
 use GuzzleHttp\Client;
+use Illuminate\Support\Str;
 use Throwable;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -135,9 +136,9 @@ class Provider extends Category implements ProviderInterface
      */
     public function getLoginUrl(GetLoginUrlParams $params): LoginUrl
     {
-        $loginUrl = $this->api()->getLoginUrl($params->username);
+        $loginUrl = $this->api(true)->getLoginUrl($params->username);
 
-        if (str_contains($loginUrl, 'webuzo.whgi.net')) {
+        if (Str::contains($loginUrl, 'webuzo.whgi.net')) {
             $loginUrl = str_replace('webuzo.whgi.net', $this->configuration->hostname, $loginUrl);
         }
 
