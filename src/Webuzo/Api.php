@@ -298,6 +298,11 @@ class Api
 
         $response = $this->makeRequest('sso', $body);
 
+        if (!isset($response['done']['url'])) {
+            throw ProvisionFunctionError::create('Failed to get login URL')
+                ->withData(['username' => $username]);
+        }
+
         return $response['done']['url'];
     }
 
