@@ -270,16 +270,14 @@ class Provider extends Category implements ProviderInterface
             return $this->api;
         }
 
+        // Otherwise, recreate the API instance.
+
         // Set the endUserEndpoint flag to the current value.
         $this->endUserEndpoint = $endUserEndpoint;
 
-        // Otherwise, recreate the API instance.
-        $auth = '';
-
-        // If authentication is set to Login credentials for Basic Auth, use the Username & Password.
-        if ($this->configuration->shouldAuthenticateWithBasicAuth()) {
-            $auth = $this->configuration->username . ':' . ((string) $this->configuration->password) . '@';
-        }
+        $auth = $this->configuration->shouldAuthenticateWithBasicAuth()
+            ? $this->configuration->username . ':' . ((string) $this->configuration->password) . '@'
+            : '';
 
         $client = new Client([
             'base_uri' => sprintf(
