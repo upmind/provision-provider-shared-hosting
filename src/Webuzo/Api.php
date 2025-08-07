@@ -90,15 +90,21 @@ class Api
 
     private function getResponseErrorMessage(array $response): ?string
     {
-        if (isset($response['error'])) {
-            $message = '';
-            foreach ($response['error'] as $error) {
-                $message .= strip_tags($error) . '; ';
-            }
-            return $message;
+        // If no error key is present, return null.
+        if (!isset($response['error'])) {
+            return null;
         }
 
-        return null;
+        // Cover array, string, and other types of error messages.
+        if (is_array($response['error'])) {
+            return implode('; ', array_map('strip_tags', $response['error']));
+        }
+
+        if (is_string($response['error'])) {
+            return strip_tags($response['error']);
+        }
+
+        return 'Response Error in an unknown format';
     }
 
     /**
