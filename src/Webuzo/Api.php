@@ -164,6 +164,13 @@ class Api
 
         $response = $this->makeRequest('users', $body);
 
+        if (!isset($response['users'])) {
+            throw ProvisionFunctionError::create('User does not exist')
+                ->withData([
+                    'username' => $username,
+                ]);
+        }
+
         foreach ($response['users'] as $name => $account) {
             if ($name === trim($username)) {
                 return $account;
