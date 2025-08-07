@@ -277,7 +277,7 @@ class Provider extends Category implements ProviderInterface
         $auth = '';
 
         // If authentication is set to Login credentials for Basic Auth, use the Username & Password.
-        if ($this->configuration->authenticateWithBasicAuth()) {
+        if ($this->configuration->shouldAuthenticateWithBasicAuth()) {
             $auth = $this->configuration->username . ':' . ((string) $this->configuration->password) . '@';
         }
 

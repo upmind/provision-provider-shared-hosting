@@ -47,7 +47,7 @@ class Api
             $requestParams['form_params'] = $body;
         }
 
-        if ($this->configuration->authenticateWithApiKey()) {
+        if ($this->configuration->shouldAuthenticateWithApiKey()) {
             $requestParams['form_params']['apiuser'] = $this->configuration->username;
             $requestParams['form_params']['apikey'] = (string) $this->configuration->api_key;
         }

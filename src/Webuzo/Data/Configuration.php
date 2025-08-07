@@ -29,12 +29,12 @@ class Configuration extends DataSet
         ]);
     }
 
-    public function authenticateWithBasicAuth()
+    public function shouldAuthenticateWithBasicAuth(): bool
     {
         return $this->authentication_type === 'login_credentials';
     }
 
-    public function authenticateWithApiKey()
+    public function shouldAuthenticateWithApiKey(): bool
     {
         return $this->authentication_type === 'api_credentials';
     }
