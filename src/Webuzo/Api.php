@@ -145,7 +145,7 @@ class Api
             'domain' => $account['domain'] ?? null,
             'reseller' => $account['type'] == 2,
             'server_hostname' => $this->configuration->hostname,
-            'package_name' => $account['plan'] != "" ? $account['plan'] : "Unknown",
+            'package_name' => $account['plan'] !== '' ? $account['plan'] : 'Unknown',
             'suspended' => $account['status'] === 'suspended',
             'suspend_reason' => $account['suspend_reason'] ?? null,
             'ip' => $account['ip'] ?? null,
