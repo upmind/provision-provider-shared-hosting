@@ -16,22 +16,18 @@
     },
     "require": {
         "php": "8.1 - 8.3",
-        "ext-curl": "*",
-        "ext-json": "*",
-        "ext-soap": "*",
-        "giggsey/libphonenumber-for-php-lite": "^8",
-        "illuminate/support": "^6.20 || ^7.0 || ^8.0 || ^9.0 || ^10.0 || ^11.0 || ^12.0",
+        "upmind/provision-provider-base": "^4.0",
         "plesk/api-php-lib": "^1.1",
         "upmind/20i-php-sdk": "^1.1",
         "upmind/enhance-sdk": "^10",
-        "upmind/provision-provider-base": "^4.0"
+        "giggsey/libphonenumber-for-php-lite": "^8",
+        "ext-curl": "*",
+        "ext-json": "*",
+        "ext-soap": "*",
+        "illuminate/support": "^6.20 || ^7.0 || ^8.0 || ^9.0 || ^10.0 || ^11.0 || ^12.0"
     },
     "require-dev": {
         "phpstan/phpstan": "^1.10"
-    },
-    "config": {
-        "optimize-autoloader": false,
-        "sort-packages": true
     },
     "extra": {
         "laravel": {
