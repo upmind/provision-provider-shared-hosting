@@ -67,6 +67,12 @@ class Provider extends Category implements ProviderInterface
 
         $username = $params->username ?: $this->generateUsername($params->domain);
 
+        if (mb_strlen($username) > self::MAX_USERNAME_LENGTH) {
+            $this->errorResult(
+                'Username is too long. Maximum length is ' . self::MAX_USERNAME_LENGTH . ' characters.'
+            );
+        }
+
         $this->api()->createAccount(
             $params,
             $username,
