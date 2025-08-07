@@ -267,8 +267,9 @@ class Provider extends Category implements ProviderInterface
         // Otherwise, recreate the API instance.
         $auth = '';
 
-        if (isset($this->configuration->username, $this->configuration->password)) {
-            $auth = $this->configuration->username . ':' . $this->configuration->password . '@';
+        // If authentication is set to Login credentials for Basic Auth, use the Username & Password.
+        if ($this->configuration->authenticateWithBasicAuth()) {
+            $auth = $this->configuration->username . ':' . ((string) $this->configuration->password) . '@';
         }
 
         $client = new Client([
@@ -276,7 +277,7 @@ class Provider extends Category implements ProviderInterface
                 'https://%s%s:%s',
                 $auth,
                 $this->configuration->hostname,
-                $endUser ? 2003 : 2005
+                $endUser ? 2003 : 2005 // Different ports for end-user and admin API
             ),
             'headers' => [
                 'Accept' => 'application/json',

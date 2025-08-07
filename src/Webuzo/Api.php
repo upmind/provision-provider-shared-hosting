@@ -47,14 +47,9 @@ class Api
             $requestParams['form_params'] = $body;
         }
 
-        if (isset($this->configuration->api_key)) {
-            $requestParams['form_params']['apikey'] = $this->configuration->api_key;
-
-            if (isset($this->configuration->username)) {
-                $requestParams['form_params']['apiuser'] = $this->configuration->username;
-            } else {
-                $requestParams['form_params']['apiuser'] = 'root';
-            }
+        if ($this->configuration->authenticateWithApiKey()) {
+            $requestParams['form_params']['apiuser'] = $this->configuration->username;
+            $requestParams['form_params']['apikey'] = (string) $this->configuration->api_key;
         }
 
         $response = $this->client->request($method, '/index.php', $requestParams);
