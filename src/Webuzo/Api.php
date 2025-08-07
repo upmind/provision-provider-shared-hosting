@@ -165,7 +165,7 @@ class Api
         $response = $this->makeRequest('users', $body);
 
         if (!isset($response['users'])) {
-            throw ProvisionFunctionError::create('User does not exist')
+            throw ProvisionFunctionError::create('Failed to retrieve user details')
                 ->withData([
                     'username' => $username,
                 ]);
