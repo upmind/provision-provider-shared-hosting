@@ -16,7 +16,7 @@ use Upmind\ProvisionProviders\SharedHosting\Enhance\Provider as Enhance;
 use Upmind\ProvisionProviders\SharedHosting\InterWorx\Provider as InterWorx;
 use Upmind\ProvisionProviders\SharedHosting\DirectAdmin\Provider as DirectAdmin;
 use Upmind\ProvisionProviders\SharedHosting\CentosWeb\Provider as CentosWeb;
-use Upmind\ProvisionProviders\SharedHosting\Panelalpha\Provider as Panelalpha;
+use Upmind\ProvisionProviders\SharedHosting\PanelAlpha\Provider as PanelAlpha;
 
 class LaravelServiceProvider extends ProvisionServiceProvider
 {
@@ -35,6 +35,6 @@ class LaravelServiceProvider extends ProvisionServiceProvider
         $this->bindProvider('shared-hosting', 'solidcp', SolidCP::class);
         $this->bindProvider('shared-hosting', 'direct-admin', DirectAdmin::class);
         $this->bindProvider('shared-hosting', 'centos-web', CentosWeb::class);
-        $this->bindProvider('shared-hosting', 'panel-alpha', Panelalpha::class);
+        $this->bindProvider('shared-hosting', 'panel-alpha', PanelAlpha::class);
     }
 }
