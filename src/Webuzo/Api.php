@@ -305,9 +305,6 @@ class Api
      */
     public function getLoginUrl(string $username): string
     {
-        // Ensure the user exists before trying to get the login URL.
-        $this->getUserDetails($username);
-
         $body = [
             'username' => $username,
         ];
