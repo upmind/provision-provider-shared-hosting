@@ -36,7 +36,7 @@ class Api
         $requestParams = [];
 
         if ($body) {
-            $requestParams['form_params'] = $body;
+            $requestParams['json'] = $body;
         }
 
         $response = $this->client->request($method, "api/admin/{$command}", $requestParams);
