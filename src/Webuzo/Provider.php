@@ -32,6 +32,7 @@ class Provider extends Category implements ProviderInterface
 
     protected Configuration $configuration;
     protected ?Api $api = null;
+    private bool $endUserApi = false;
 
     public function __construct(Configuration $configuration)
     {
@@ -255,12 +256,14 @@ class Provider extends Category implements ProviderInterface
         throw $e;
     }
 
-    protected function api(): Api
+    protected function api(bool $endUser = false): Api
     {
-        if ($this->api) {
+        // If the API is already set, and the endUser setting matches, return it.
+        if ($this->endUserApi === $endUser && $this->api) {
             return $this->api;
         }
 
+        // Otherwise, recreate the API instance.
         $auth = '';
 
         if (isset($this->configuration->username, $this->configuration->password)) {
@@ -268,7 +271,12 @@ class Provider extends Category implements ProviderInterface
         }
 
         $client = new Client([
-            'base_uri' => sprintf('https://%s%s:%s', $auth, $this->configuration->hostname, 2005),
+            'base_uri' => sprintf(
+                'https://%s%s:%s',
+                $auth,
+                $this->configuration->hostname,
+                $endUser ? 2003 : 2005
+            ),
             'headers' => [
                 'Accept' => 'application/json',
             ],
