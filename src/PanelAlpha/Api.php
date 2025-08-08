@@ -151,9 +151,9 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function getUserConfig(string $username): array
+    public function getUserConfig(string $userId): array
     {
-        return $this->makeRequest("users/{$username}");
+        return $this->makeRequest("users/{$userId}");
     }
 
     /**
@@ -374,15 +374,23 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function updatePassword(string $username, string $password)
+    public function updatePassword(string $username, string $password): void
     {
-        $email = $username;
         if (!is_numeric($username)) {
             $username = $this->getUserId($username);
         }
 
+        $account = $this->getUserConfig($username);
+
+        if (!isset($account['id'], $account['email'])) {
+            throw ProvisionFunctionError::create('User not found')
+                ->withData([
+                    'username' => $username,
+                ]);
+        }
+
         $query = [
-            'email' => $email,
+            'email' => $account['email'],
             'password' => $password,
         ];
 
