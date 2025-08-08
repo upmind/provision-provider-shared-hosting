@@ -117,7 +117,7 @@ class Api
     public function getAccountData(string $username, ?string $domain): array
     {
         if (!is_numeric($username)) {
-            $username = $this->getUserID($username);
+            $username = $this->getUserId($username);
         }
 
         $account = $this->getUserConfig($username);
@@ -162,7 +162,7 @@ class Api
     public function suspendAccount(string $username): void
     {
         if (!is_numeric($username)) {
-            $username = $this->getUserID($username);
+            $username = $this->getUserId($username);
         }
 
         $services = $this->getServiceIDs($username);
@@ -179,7 +179,7 @@ class Api
     public function unsuspendAccount(string $username): void
     {
         if (!is_numeric($username)) {
-            $username = $this->getUserID($username);
+            $username = $this->getUserId($username);
         }
 
         $services = $this->getServiceIDs($username);
@@ -209,9 +209,9 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    private function getUserID($username)
+    private function getUserId($username)
     {
-        $users = $this->makeRequest("users");
+        $users = $this->makeRequest('users');
         foreach ($users as $user) {
             if ($user['email'] === $username) {
                 return (string)$user['id'];
@@ -276,7 +276,7 @@ class Api
     public function deleteAccount(string $username): void
     {
         if (!is_numeric($username)) {
-            $username = $this->getUserID($username);
+            $username = $this->getUserId($username);
         }
 
         $this->makeRequest("users/$username", null, 'DELETE');
@@ -289,7 +289,7 @@ class Api
     public function updatePackage(string $username, string $package_name, string $domain): void
     {
         if (!is_numeric($username)) {
-            $username = $this->getUserID($username);
+            $username = $this->getUserId($username);
         }
 
         $service = $this->getService($username, $domain);
@@ -315,7 +315,7 @@ class Api
     public function getAccountUsage(string $username, ?string $domain): UsageData
     {
         if (!is_numeric($username)) {
-            $username = $this->getUserID($username);
+            $username = $this->getUserId($username);
         }
 
         $service = $this->getService($username, $domain);
@@ -345,7 +345,7 @@ class Api
     public function getLoginUrl(string $username): string
     {
         if (!is_numeric($username)) {
-            $username = $this->getUserID($username);
+            $username = $this->getUserId($username);
         }
 
         $sso = $this->makeRequest("users/{$username}/sso-token", null, 'POST');
@@ -361,7 +361,7 @@ class Api
     {
         $email = $username;
         if (!is_numeric($username)) {
-            $username = $this->getUserID($username);
+            $username = $this->getUserId($username);
         }
 
         $query = [
