@@ -22,6 +22,7 @@
         "upmind/enhance-sdk": "^12.3.0",
         "giggsey/libphonenumber-for-php-lite": "^8",
         "ext-curl": "*",
+        "ext-json": "*",
         "ext-soap": "*"
     },
     "require-dev": {
