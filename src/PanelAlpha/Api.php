@@ -35,8 +35,18 @@ class Api
     {
         $requestParams = [];
 
-        if ($body) {
-            $requestParams['json'] = $body;
+        if (isset($body)) {
+            switch ($method) {
+                case 'POST':
+                case 'PUT':
+                case 'PATCH':
+                case 'DELETE':
+                    $requestParams['json'] = $body;
+                    break;
+                case 'GET':
+                    $requestParams['query'] = $body;
+                    break;
+            }
         }
 
         $response = $this->client->request($method, "api/admin/{$command}", $requestParams);
