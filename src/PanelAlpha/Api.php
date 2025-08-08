@@ -99,7 +99,17 @@ class Api
             "password" => $password,
         ];
 
-        $userId = $this->makeRequest("users", $query, "POST")["id"];
+        $createUserResult = $this->makeRequest('users', $query, 'POST');
+
+        if (!isset($createUserResult['id'])) {
+            throw ProvisionFunctionError::create('Failed to create user')
+                ->withData([
+                    'username' => $username,
+                    'email' => $params->email,
+                ]);
+        }
+
+        $userId = $createUserResult['id'];
 
         $query = [
             "plan_id" => $planId,
