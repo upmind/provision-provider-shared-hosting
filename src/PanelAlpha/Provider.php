@@ -75,7 +75,7 @@ class Provider extends Category implements ProviderInterface
                 $username
             );
 
-            return $this->_getInfo($username, $params->domain, 'Account created');
+            return $this->_getInfo($params->email, $params->domain, 'Account created');
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -111,8 +111,11 @@ class Provider extends Category implements ProviderInterface
     public function getInfo(AccountUsername $params): AccountInfo
     {
         try {
+            // Use customer_id if available, otherwise use username
             return $this->_getInfo(
-                $params->username,
+                is_int($params->customer_id) || is_string($params->customer_id)
+                    ? (string) $params->customer_id
+                    : $params->username,
                 $params->domain,
                 'Account info retrieved',
             );
@@ -129,7 +132,13 @@ class Provider extends Category implements ProviderInterface
     public function getUsage(AccountUsername $params): AccountUsage
     {
         try {
-            $usage = $this->api()->getAccountUsage($params->username, $params->domain);
+            // Use customer_id if available, otherwise use username
+            $usage = $this->api()->getAccountUsage(
+                is_int($params->customer_id) || is_string($params->customer_id)
+                    ? (string) $params->customer_id
+                    : $params->username,
+                $params->domain
+            );
 
             return AccountUsage::create()
                 ->setUsageData($usage);
@@ -153,7 +162,7 @@ class Provider extends Category implements ProviderInterface
         try {
             // Use customer_id if available, otherwise use username
             $loginUrl = $this->api()->getLoginUrl(is_int($params->customer_id) || is_string($params->customer_id)
-                ? $params->customer_id
+                ? (string) $params->customer_id
                 : $params->username
             );
 
@@ -175,7 +184,12 @@ class Provider extends Category implements ProviderInterface
     public function changePassword(ChangePasswordParams $params): EmptyResult
     {
         try {
-            $this->api()->updatePassword($params->username, $params->password);
+            $this->api()->updatePassword(
+                is_int($params->customer_id) || is_string($params->customer_id)
+                    ? (string) $params->customer_id
+                    : $params->username,
+                $params->password
+            );
 
             return $this->emptyResult('Password changed');
         } catch (Throwable $e) {
@@ -197,13 +211,14 @@ class Provider extends Category implements ProviderInterface
                 $this->errorResult('Domain is required');
             }
 
-            $this->api()->updatePackage($params->username, $params->package_name, $params->domain);
+            // Use customer_id if available, otherwise use username
+            $username = is_int($params->customer_id) || is_string($params->customer_id)
+                ? (string) $params->customer_id
+                : $params->username;
 
-            return $this->_getInfo(
-                $params->username,
-                $params->domain,
-                'Package changed'
-            );
+            $this->api()->updatePackage($username, $params->package_name, $params->domain);
+
+            return $this->_getInfo($username, $params->domain, 'Package changed');
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -219,9 +234,14 @@ class Provider extends Category implements ProviderInterface
     public function suspend(SuspendParams $params): AccountInfo
     {
         try {
-            $this->api()->suspendAccount($params->username);
+            // Use customer_id if available, otherwise use username
+            $username = is_int($params->customer_id) || is_string($params->customer_id)
+                ? (string) $params->customer_id
+                : $params->username;
 
-            return $this->_getInfo($params->username, $params->domain, 'Account suspended');
+            $this->api()->suspendAccount($username);
+
+            return $this->_getInfo($username, $params->domain, 'Account suspended');
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -237,9 +257,14 @@ class Provider extends Category implements ProviderInterface
     public function unSuspend(AccountUsername $params): AccountInfo
     {
         try {
-            $this->api()->unsuspendAccount($params->username);
+            // Use customer_id if available, otherwise use username
+            $username = is_int($params->customer_id) || is_string($params->customer_id)
+                ? (string) $params->customer_id
+                : $params->username;
 
-            return $this->_getInfo($params->username, $params->domain, 'Account unsuspended');
+            $this->api()->unsuspendAccount($username);
+
+            return $this->_getInfo($username, $params->domain, 'Account unsuspended');
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -255,7 +280,11 @@ class Provider extends Category implements ProviderInterface
     public function terminate(AccountUsername $params): EmptyResult
     {
         try {
-            $this->api()->deleteAccount($params->username);
+            // Use customer_id if available, otherwise use username
+            $this->api()->deleteAccount(is_int($params->customer_id) || is_string($params->customer_id)
+                ? (string) $params->customer_id
+                : $params->username
+            );
 
             return $this->emptyResult('Account deleted');
         } catch (Throwable $e) {
@@ -299,7 +328,6 @@ class Provider extends Category implements ProviderInterface
             $responseData = json_decode($body, true);
 
             $errorMessage = $responseData['message'] ?? 'unknown error';
-
 
             $this->errorResult(
                 sprintf('Provider API Error: %s', $errorMessage),
