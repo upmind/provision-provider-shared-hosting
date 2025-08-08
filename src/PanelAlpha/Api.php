@@ -282,7 +282,7 @@ class Api
         }
 
         foreach ($services as $s) {
-            if ($s["domain"] == $domain) {
+            if (isset($s["domain"]) && $s["domain"] === $domain) {
                 return $s;
             }
         }
