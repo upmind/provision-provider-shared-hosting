@@ -216,23 +216,23 @@ class Api
     }
 
     /**
+     * Find User ID by their email address which is unique in PanelAlpha.
+     *
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    private function getUserId($username): string
+    private function getUserId(string $username): string
     {
-        $users = $this->makeRequest('users');
-        foreach ($users as $user) {
-            if ($user['email'] === $username) {
-                return (string) $user['id'];
+        $user = $this->makeRequest('users/email', ['email' => $username]);
 
-            }
+        if (empty($user) || !isset($user['id'])) {
+            throw ProvisionFunctionError::create('User does not exist')
+                ->withData([
+                    'username' => $username,
+                ]);
         }
 
-        throw ProvisionFunctionError::create("User does not exist")
-            ->withData([
-                'username' => $username,
-            ]);
+        return (string) $user['id'];
     }
 
     /**
