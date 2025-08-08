@@ -90,7 +90,7 @@ class Api
         $planId = $params->package_name;
 
         if (!is_numeric($planId)) {
-            $planId = $this->getPlanID($planId);
+            $planId = $this->getPlanId($planId);
         }
 
         $query = [
@@ -249,12 +249,17 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    private function getPlanID($plan)
+    private function getPlanId(string $plan): string
     {
-        $plans = $this->makeRequest("plans");
+        $plans = $this->makeRequest('plans');
+
         foreach ($plans as $p) {
-            if (strtolower($p['name']) === strtolower($plan)) {
-                return (string)$p['id'];
+            if (!isset($p['id'], $p['name'])) {
+                continue; // Skip invalid plan results
+            }
+
+            if (mb_strtolower($p['name']) === mb_strtolower($plan)) {
+                return (string) $p['id'];
             }
         }
 
@@ -317,7 +322,7 @@ class Api
         $planId = $package_name;
 
         if (!is_numeric($planId)) {
-            $planId = $this->getPlanID($planId);
+            $planId = $this->getPlanId($planId);
         }
 
         $serviceId = $service["service"]["id"];
