@@ -150,7 +150,7 @@ class Api
             'reseller' => false,
             'server_hostname' => $this->configuration->hostname,
             'package_name' => $service["plan_name"] ?? "unknown",
-            'suspended' => isset($service["service"]) && $service["service"]["status"] == "suspended",
+            'suspended' => isset($service["service"]) && $service["service"]["status"] === "suspended",
             'suspend_reason' => null,
             'ip' => $service['host_ip_address'] ?? null,
             'nameservers' => $service["host_nameservers"] ?? [],
