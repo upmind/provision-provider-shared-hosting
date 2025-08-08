@@ -151,7 +151,11 @@ class Provider extends Category implements ProviderInterface
     public function getLoginUrl(GetLoginUrlParams $params): LoginUrl
     {
         try {
-            $loginUrl = $this->api()->getLoginUrl($params->username);
+            // Use customer_id if available, otherwise use username
+            $loginUrl = $this->api()->getLoginUrl(is_int($params->customer_id) || is_string($params->customer_id)
+                ? $params->customer_id
+                : $params->username
+            );
 
             return LoginUrl::create()
                 ->setLoginUrl($loginUrl)
