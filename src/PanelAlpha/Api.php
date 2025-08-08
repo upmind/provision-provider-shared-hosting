@@ -185,7 +185,7 @@ class Api
             $username = $this->getUserId($username);
         }
 
-        $services = $this->getServiceIDs($username);
+        $services = $this->getServiceIds($username);
 
         foreach ($services as $service) {
             $this->makeRequest("users/$username/services/$service/suspend", null, 'PUT');
@@ -202,7 +202,7 @@ class Api
             $username = $this->getUserId($username);
         }
 
-        $services = $this->getServiceIDs($username);
+        $services = $this->getServiceIds($username);
 
         foreach ($services as $service) {
             $this->makeRequest("users/$username/services/$service/unsuspend", null, 'PUT');
@@ -213,7 +213,7 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    private function getServiceIDs($userId): array
+    private function getServiceIds($userId): array
     {
         $services = $this->makeRequest("users/$userId/services");
         $ids = [];
