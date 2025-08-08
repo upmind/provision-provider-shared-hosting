@@ -141,6 +141,9 @@ class Provider extends Category implements ProviderInterface
     /**
      * @inheritDoc
      *
+     * Username param should be either the User ID, or the User email address.
+     * User's username is not unique, so we cannot use it to identify the user.
+     *
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
