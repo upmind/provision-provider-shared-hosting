@@ -209,12 +209,12 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    private function getUserId($username)
+    private function getUserId($username): string
     {
         $users = $this->makeRequest('users');
         foreach ($users as $user) {
             if ($user['email'] === $username) {
-                return (string)$user['id'];
+                return (string) $user['id'];
 
             }
         }
