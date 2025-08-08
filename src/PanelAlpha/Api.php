@@ -360,6 +360,13 @@ class Api
 
         $sso = $this->makeRequest("users/{$username}/sso-token", null, 'POST');
 
+        if (empty($sso) || !isset($sso['url'], $sso['token'])) {
+            throw ProvisionFunctionError::create('Failed to get Login URL')
+                ->withData([
+                    'username' => $username,
+                ]);
+        }
+
         return "{$sso["url"]}/sso-login?token={$sso["token"]}";
     }
 
