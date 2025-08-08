@@ -27,16 +27,10 @@ use Upmind\ProvisionProviders\SharedHosting\PanelAlpha\Data\Configuration;
 
 class Provider extends Category implements ProviderInterface
 {
-    /**
-     * @var Configuration
-     */
-    protected Configuration $configuration;
     protected const MAX_USERNAME_LENGTH = 10;
 
-    /**
-     * @var Api|null
-     */
-    protected $api;
+    protected Configuration $configuration;
+    protected ?Api $api = null;
 
     public function __construct(Configuration $configuration)
     {
