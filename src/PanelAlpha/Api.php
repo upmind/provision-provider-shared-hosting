@@ -311,7 +311,7 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function updatePackage(string $username, string $package_name, string $domain): void
+    public function updatePackage(string $username, string $packageName, string $domain): void
     {
         if (!is_numeric($username)) {
             $username = $this->getUserId($username);
@@ -319,13 +319,14 @@ class Api
 
         $service = $this->getService($username, $domain);
 
-        $planId = $package_name;
+        $planId = $packageName;
 
         if (!is_numeric($planId)) {
             $planId = $this->getPlanId($planId);
         }
 
         $serviceId = $service["service"]["id"];
+
         $query = [
             'plan_id' => $planId,
         ];
