@@ -317,6 +317,7 @@ class Provider extends Category implements ProviderInterface
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->configuration->api_token,
                 'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
             ],
             'verify' => false,
             'connect_timeout' => 10,
