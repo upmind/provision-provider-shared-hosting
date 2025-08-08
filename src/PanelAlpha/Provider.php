@@ -57,7 +57,8 @@ class Provider extends Category implements ProviderInterface
      */
     public function create(CreateParams $params): AccountInfo
     {
-        $username = $params->username ?: $this->generateUsername($params->domain);
+        // If username is not provided, use email as username
+        $username = $params->username ?? $params->email;
 
         try {
             $this->api()->createAccount(
@@ -65,19 +66,10 @@ class Provider extends Category implements ProviderInterface
                 $username
             );
 
-            return $this->_getInfo($params->email, $params->domain, 'Account created');
+            return $this->_getInfo($params->customer_id ?? $params->email, $params->domain, 'Account created');
         } catch (Throwable $e) {
             $this->handleException($e);
         }
-    }
-
-    protected function generateUsername(string $base): string
-    {
-        return substr(
-            preg_replace('/^[^a-z]+/', '', preg_replace('/[^a-z0-9]/', '', strtolower($base))),
-            0,
-            self::MAX_USERNAME_LENGTH
-        );
     }
 
     /**
