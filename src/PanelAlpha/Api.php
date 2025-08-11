@@ -137,7 +137,7 @@ class Api
     public function getAccountData(string $username, ?string $domain): array
     {
         if (!is_numeric($username)) {
-            $username = $this->getUserId($username);
+            $username = $this->findUserIdByEmail($username);
         }
 
         $account = $this->getUserConfig($username);
@@ -182,7 +182,7 @@ class Api
     public function suspendAccount(string $username): void
     {
         if (!is_numeric($username)) {
-            $username = $this->getUserId($username);
+            $username = $this->findUserIdByEmail($username);
         }
 
         $services = $this->getServiceIds($username);
@@ -199,7 +199,7 @@ class Api
     public function unsuspendAccount(string $username): void
     {
         if (!is_numeric($username)) {
-            $username = $this->getUserId($username);
+            $username = $this->findUserIdByEmail($username);
         }
 
         $services = $this->getServiceIds($username);
@@ -207,6 +207,26 @@ class Api
         foreach ($services as $service) {
             $this->makeRequest("users/$username/services/$service/unsuspend", null, 'PUT');
         }
+    }
+
+    /**
+     * Find User ID by their email address which is unique in PanelAlpha.
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function findUserIdByEmail(string $email): string
+    {
+        $user = $this->makeRequest('users/email', ['email' => $email]);
+
+        if (empty($user) || !isset($user['id'])) {
+            throw ProvisionFunctionError::create('User does not exist')
+                ->withData([
+                    'username' => $email,
+                ]);
+        }
+
+        return (string) $user['id'];
     }
 
     /**
@@ -223,26 +243,6 @@ class Api
         }
 
         return $ids;
-    }
-
-    /**
-     * Find User ID by their email address which is unique in PanelAlpha.
-     *
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    private function getUserId(string $username): string
-    {
-        $user = $this->makeRequest('users/email', ['email' => $username]);
-
-        if (empty($user) || !isset($user['id'])) {
-            throw ProvisionFunctionError::create('User does not exist')
-                ->withData([
-                    'username' => $username,
-                ]);
-        }
-
-        return (string) $user['id'];
     }
 
     /**
@@ -301,7 +301,7 @@ class Api
     public function deleteAccount(string $username): void
     {
         if (!is_numeric($username)) {
-            $username = $this->getUserId($username);
+            $username = $this->findUserIdByEmail($username);
         }
 
         $this->makeRequest("users/$username", null, 'DELETE');
@@ -314,7 +314,7 @@ class Api
     public function updatePackage(string $username, string $packageName, string $domain): void
     {
         if (!is_numeric($username)) {
-            $username = $this->getUserId($username);
+            $username = $this->findUserIdByEmail($username);
         }
 
         $service = $this->getService($username, $domain);
@@ -341,7 +341,7 @@ class Api
     public function getAccountUsage(string $username, ?string $domain): UsageData
     {
         if (!is_numeric($username)) {
-            $username = $this->getUserId($username);
+            $username = $this->findUserIdByEmail($username);
         }
 
         $service = $this->getService($username, $domain);
@@ -371,7 +371,7 @@ class Api
     public function getLoginUrl(string $username): string
     {
         if (!is_numeric($username)) {
-            $username = $this->getUserId($username);
+            $username = $this->findUserIdByEmail($username);
         }
 
         $sso = $this->makeRequest("users/{$username}/sso-token", null, 'POST');
@@ -393,7 +393,7 @@ class Api
     public function updatePassword(string $username, string $password): void
     {
         if (!is_numeric($username)) {
-            $username = $this->getUserId($username);
+            $username = $this->findUserIdByEmail($username);
         }
 
         $account = $this->getUserConfig($username);
