@@ -383,7 +383,7 @@ class Provider extends Category implements ProviderInterface
             // Create user if not found
         }
 
-        return $this->api()->createUser($params, $name)['id'];
+        return (string) $this->api()->createUser($params, $name)['id'];
     }
 
     private function generateName(string $base): string
