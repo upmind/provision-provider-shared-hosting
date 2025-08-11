@@ -8,6 +8,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Throwable;
 use Carbon\Carbon;
+use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionProviders\SharedHosting\Category;
@@ -57,16 +58,28 @@ class Provider extends Category implements ProviderInterface
      */
     public function create(CreateParams $params): AccountInfo
     {
-        // If username is not provided, use email as username
-        $username = $params->username ?? $params->email;
+        // Domain is not required to create a service, but it is required to create an instance.
+        if (empty($params->domain)) {
+            $this->errorResult('Domain is required to create an account instance');
+        }
+
+        if (mb_strlen($params->email) > 255) {
+            $this->errorResult('Email address is too long');
+        }
+
+        if ($params->password !== null && mb_strlen($params->password) < 8) {
+            $this->errorResult('Password must be at least 8 characters long');
+        }
+
+        // Generate a random username from the domain, if username is not provided.
+        $name = $params->username ?? $this->generateName((string) $params->domain);
 
         try {
-            $this->api()->createAccount(
-                $params,
-                $username
-            );
+            $userId = $this->findOrCreateUser($params, $name);
 
-            return $this->_getInfo($params->customer_id ?? $params->email, $params->domain, 'Account created');
+            $this->api()->createService($params, $userId, $name);
+
+            return $this->_getInfo($userId, $params->domain, 'Account created');
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -76,9 +89,9 @@ class Provider extends Category implements ProviderInterface
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    protected function _getInfo(string $username, ?string $domain, string $message): AccountInfo
+    protected function _getInfo(string $userId, ?string $domain, string $message): AccountInfo
     {
-        $info = $this->api()->getAccountData($username, $domain);
+        $info = $this->api()->getAccountData($userId, $domain);
 
         return AccountInfo::create($info)->setMessage($message);
     }
@@ -93,7 +106,7 @@ class Provider extends Category implements ProviderInterface
     public function getInfo(AccountUsername $params): AccountInfo
     {
         try {
-            // Use customer_id if available, otherwise use username
+            // Use customer_id if available, otherwise use username which should be an email address.
             return $this->_getInfo(
                 is_int($params->customer_id) || is_string($params->customer_id)
                     ? (string) $params->customer_id
@@ -114,7 +127,7 @@ class Provider extends Category implements ProviderInterface
     public function getUsage(AccountUsername $params): AccountUsage
     {
         try {
-            // Use customer_id if available, otherwise use username
+            // Use customer_id if available, otherwise use username which should be an email address.
             $usage = $this->api()->getAccountUsage(
                 is_int($params->customer_id) || is_string($params->customer_id)
                     ? (string) $params->customer_id
@@ -142,7 +155,7 @@ class Provider extends Category implements ProviderInterface
     public function getLoginUrl(GetLoginUrlParams $params): LoginUrl
     {
         try {
-            // Use customer_id if available, otherwise use username
+            // Use customer_id if available, otherwise use username which should be an email address.
             $loginUrl = $this->api()->getLoginUrl(is_int($params->customer_id) || is_string($params->customer_id)
                 ? (string) $params->customer_id
                 : $params->username
@@ -166,6 +179,7 @@ class Provider extends Category implements ProviderInterface
     public function changePassword(ChangePasswordParams $params): EmptyResult
     {
         try {
+            // Use customer_id if available, otherwise use username (should be email)
             $this->api()->updatePassword(
                 is_int($params->customer_id) || is_string($params->customer_id)
                     ? (string) $params->customer_id
@@ -193,14 +207,14 @@ class Provider extends Category implements ProviderInterface
                 $this->errorResult('Domain is required');
             }
 
-            // Use customer_id if available, otherwise use username
-            $username = is_int($params->customer_id) || is_string($params->customer_id)
+            // Use customer_id if available, otherwise use username (should be email)
+            $userId = is_int($params->customer_id) || is_string($params->customer_id)
                 ? (string) $params->customer_id
                 : $params->username;
 
-            $this->api()->updatePackage($username, $params->package_name, $params->domain);
+            $this->api()->updatePackage($userId, $params->package_name, $params->domain);
 
-            return $this->_getInfo($username, $params->domain, 'Package changed');
+            return $this->_getInfo($userId, $params->domain, 'Package changed');
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -217,13 +231,13 @@ class Provider extends Category implements ProviderInterface
     {
         try {
             // Use customer_id if available, otherwise use username
-            $username = is_int($params->customer_id) || is_string($params->customer_id)
+            $userId = is_int($params->customer_id) || is_string($params->customer_id)
                 ? (string) $params->customer_id
                 : $params->username;
 
-            $this->api()->suspendAccount($username);
+            $this->api()->suspendAccount($userId);
 
-            return $this->_getInfo($username, $params->domain, 'Account suspended');
+            return $this->_getInfo($userId, $params->domain, 'Account suspended');
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -240,13 +254,13 @@ class Provider extends Category implements ProviderInterface
     {
         try {
             // Use customer_id if available, otherwise use username
-            $username = is_int($params->customer_id) || is_string($params->customer_id)
+            $userId = is_int($params->customer_id) || is_string($params->customer_id)
                 ? (string) $params->customer_id
                 : $params->username;
 
-            $this->api()->unsuspendAccount($username);
+            $this->api()->unsuspendAccount($userId);
 
-            return $this->_getInfo($username, $params->domain, 'Account unsuspended');
+            return $this->_getInfo($userId, $params->domain, 'Account unsuspended');
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -345,5 +359,39 @@ class Provider extends Category implements ProviderInterface
         ]);
 
         return $this->api = new Api($client, $this->configuration);
+    }
+
+    /**
+     * Find an existing stack user by email (if auto-detect enabled), or create
+     * a new one.
+     *
+     * @return string User ID.
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    private function findOrCreateUser(CreateParams $params, string $name): string
+    {
+        if ($params->customer_id !== null) {
+            return (string) $params->customer_id;
+        }
+
+        // re-use customer email address for stack user
+        try {
+            return $this->api()->findUserIdByEmail($params->email);
+        } catch (ProvisionFunctionError $e) {
+            // Create user if not found
+        }
+
+        return $this->api()->createUser($params, $name)['id'];
+    }
+
+    private function generateName(string $base): string
+    {
+        return substr(
+            preg_replace('/^[^a-z]+/', '', preg_replace('/[^a-z0-9]/', '', strtolower($base))),
+            0,
+            self::MAX_USERNAME_LENGTH
+        );
     }
 }

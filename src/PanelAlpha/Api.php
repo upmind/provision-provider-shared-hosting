@@ -83,33 +83,13 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function createAccount(CreateParams $params, string $username): void
+    public function createService(CreateParams $params, string $userId, string $name): void
     {
-        $password = $params->password ?: Helper::generatePassword();
-
         $planId = $params->package_name;
 
         if (!is_numeric($planId)) {
             $planId = $this->getPlanId($planId);
         }
-
-        $query = [
-            "first_name" => $username,
-            "email" => $params->email,
-            "password" => $password,
-        ];
-
-        $createUserResult = $this->makeRequest('users', $query, 'POST');
-
-        if (!isset($createUserResult['id'])) {
-            throw ProvisionFunctionError::create('Failed to create user')
-                ->withData([
-                    'username' => $username,
-                    'email' => $params->email,
-                ]);
-        }
-
-        $userId = $createUserResult['id'];
 
         $query = [
             "plan_id" => $planId,
@@ -120,7 +100,7 @@ class Api
         $query = [
             "user_id" => $userId,
             "service_id" => $serviceId,
-            "name" => $username,
+            "name" => $name,
         ];
 
         if ($params->domain) {
@@ -134,15 +114,48 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function getAccountData(string $username, ?string $domain): array
+    public function createUser(CreateParams $params, string $name): array
     {
-        if (!is_numeric($username)) {
-            $username = $this->findUserIdByEmail($username);
+        // Prep name
+        if (!empty($params->customer_name)) {
+            $name = (string) $params->customer_name;
         }
 
-        $account = $this->getUserConfig($username);
+        $nameArray = explode(' ', $name, 2);
 
-        $service = $this->getService($username, $domain);
+        $query = [
+            'first_name' => mb_substr($nameArray[0], 0, 255),
+            'last_name' => isset($nameArray[1]) ? mb_substr($nameArray[1], 0, 255) : '',
+            'email' => $params->email,
+            'password' => $params->password ?: Helper::generatePassword(),
+        ];
+
+        $result = $this->makeRequest('users', $query, 'POST');
+
+        if (!isset($result['id'])) {
+            throw ProvisionFunctionError::create('Failed to create user')
+                ->withData([
+                    'name' => $name,
+                    'email' => $params->email,
+                ]);
+        }
+
+        return $result;
+    }
+
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function getAccountData(string $userId, ?string $domain): array
+    {
+        if (!is_numeric($userId)) {
+            $userId = $this->findUserIdByEmail($userId);
+        }
+
+        $account = $this->getUserConfig($userId);
+
+        $service = $this->getService($userId, $domain);
 
         return [
             'username' => $account['name'],
@@ -170,25 +183,25 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function getInstances(string $username): array
+    public function getInstances(string $userId): array
     {
-        return $this->makeRequest("users/{$username}/all-instances");
+        return $this->makeRequest("users/{$userId}/all-instances");
     }
 
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function suspendAccount(string $username): void
+    public function suspendAccount(string $userId): void
     {
-        if (!is_numeric($username)) {
-            $username = $this->findUserIdByEmail($username);
+        if (!is_numeric($userId)) {
+            $userId = $this->findUserIdByEmail($userId);
         }
 
-        $services = $this->getServiceIds($username);
+        $services = $this->getServiceIds($userId);
 
         foreach ($services as $service) {
-            $this->makeRequest("users/$username/services/$service/suspend", null, 'PUT');
+            $this->makeRequest("users/$userId/services/$service/suspend", null, 'PUT');
         }
     }
 
@@ -196,16 +209,16 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function unsuspendAccount(string $username): void
+    public function unsuspendAccount(string $userId): void
     {
-        if (!is_numeric($username)) {
-            $username = $this->findUserIdByEmail($username);
+        if (!is_numeric($userId)) {
+            $userId = $this->findUserIdByEmail($userId);
         }
 
-        $services = $this->getServiceIds($username);
+        $services = $this->getServiceIds($userId);
 
         foreach ($services as $service) {
-            $this->makeRequest("users/$username/services/$service/unsuspend", null, 'PUT');
+            $this->makeRequest("users/$userId/services/$service/unsuspend", null, 'PUT');
         }
     }
 
@@ -222,7 +235,7 @@ class Api
         if (empty($user) || !isset($user['id'])) {
             throw ProvisionFunctionError::create('User does not exist')
                 ->withData([
-                    'username' => $email,
+                    'email' => $email,
                 ]);
         }
 
@@ -273,9 +286,9 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    private function getService($username, $domain)
+    private function getService($userId, $domain)
     {
-        $services = $this->getInstances($username);
+        $services = $this->getInstances($userId);
 
         if (!$domain) {
             return $services[0];
@@ -298,26 +311,26 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function deleteAccount(string $username): void
+    public function deleteAccount(string $userId): void
     {
-        if (!is_numeric($username)) {
-            $username = $this->findUserIdByEmail($username);
+        if (!is_numeric($userId)) {
+            $userId = $this->findUserIdByEmail($userId);
         }
 
-        $this->makeRequest("users/$username", null, 'DELETE');
+        $this->makeRequest("users/$userId", null, 'DELETE');
     }
 
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function updatePackage(string $username, string $packageName, string $domain): void
+    public function updatePackage(string $userId, string $packageName, string $domain): void
     {
-        if (!is_numeric($username)) {
-            $username = $this->findUserIdByEmail($username);
+        if (!is_numeric($userId)) {
+            $userId = $this->findUserIdByEmail($userId);
         }
 
-        $service = $this->getService($username, $domain);
+        $service = $this->getService($userId, $domain);
 
         $planId = $packageName;
 
@@ -331,20 +344,20 @@ class Api
             'plan_id' => $planId,
         ];
 
-        $this->makeRequest("users/{$username}/services/{$serviceId}/change-plan", $query, "PUT");
+        $this->makeRequest("users/{$userId}/services/{$serviceId}/change-plan", $query, "PUT");
     }
 
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function getAccountUsage(string $username, ?string $domain): UsageData
+    public function getAccountUsage(string $userId, ?string $domain): UsageData
     {
-        if (!is_numeric($username)) {
-            $username = $this->findUserIdByEmail($username);
+        if (!is_numeric($userId)) {
+            $userId = $this->findUserIdByEmail($userId);
         }
 
-        $service = $this->getService($username, $domain);
+        $service = $this->getService($userId, $domain);
 
         $usage = $service["stats"] ?? null;
         if (!$usage) {
@@ -368,18 +381,18 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function getLoginUrl(string $username): string
+    public function getLoginUrl(string $userId): string
     {
-        if (!is_numeric($username)) {
-            $username = $this->findUserIdByEmail($username);
+        if (!is_numeric($userId)) {
+            $userId = $this->findUserIdByEmail($userId);
         }
 
-        $sso = $this->makeRequest("users/{$username}/sso-token", null, 'POST');
+        $sso = $this->makeRequest("users/{$userId}/sso-token", null, 'POST');
 
         if (empty($sso) || !isset($sso['url'], $sso['token'])) {
             throw ProvisionFunctionError::create('Failed to get Login URL')
                 ->withData([
-                    'username' => $username,
+                    'user_id' => $userId,
                 ]);
         }
 
@@ -390,18 +403,18 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function updatePassword(string $username, string $password): void
+    public function updatePassword(string $userId, string $password): void
     {
-        if (!is_numeric($username)) {
-            $username = $this->findUserIdByEmail($username);
+        if (!is_numeric($userId)) {
+            $userId = $this->findUserIdByEmail($userId);
         }
 
-        $account = $this->getUserConfig($username);
+        $account = $this->getUserConfig($userId);
 
         if (!isset($account['id'], $account['email'])) {
             throw ProvisionFunctionError::create('User not found')
                 ->withData([
-                    'username' => $username,
+                    'user_id' => $userId,
                 ]);
         }
 
@@ -410,7 +423,6 @@ class Api
             'password' => $password,
         ];
 
-        $this->makeRequest("users/{$username}", $query, "PUT");
+        $this->makeRequest("users/{$userId}", $query, "PUT");
     }
-
 }
