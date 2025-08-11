@@ -163,15 +163,17 @@ class Api
         $service = $this->getService($userId, $domain);
 
         return [
-            'username' => $account['name'],
-            'domain' => $service["domain"] ?? null,
+            'customer_id' => $userId,
+            'subscription_id' => $service['id'] ?? null,
+            'username' => $account['email'],
+            'domain' => $service['domain'] ?? null,
             'reseller' => false,
             'server_hostname' => $this->configuration->hostname,
-            'package_name' => $service["plan_name"] ?? "unknown",
-            'suspended' => isset($service["service"]) && $service["service"]["status"] === "suspended",
+            'package_name' => $service['plan_name'] ?? 'unknown',
+            'suspended' => isset($service['service']['status']) && $service['service']['status'] === 'suspended',
             'suspend_reason' => null,
             'ip' => $service['host_ip_address'] ?? null,
-            'nameservers' => $service["host_nameservers"] ?? [],
+            'nameservers' => $service['host_nameservers'] ?? [],
         ];
     }
 
