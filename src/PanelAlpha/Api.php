@@ -253,7 +253,7 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    private function getServiceIds($userId): array
+    private function getServiceIds(string $userId): array
     {
         $services = $this->makeRequest("users/$userId/services");
         $ids = [];
@@ -293,7 +293,7 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    private function getService($userId, $domain)
+    private function getService(string $userId, ?string $domain = null)
     {
         $services = $this->getInstances($userId);
 
@@ -311,7 +311,6 @@ class Api
             ->withData([
                 'domain' => $domain,
             ]);
-
     }
 
     /**

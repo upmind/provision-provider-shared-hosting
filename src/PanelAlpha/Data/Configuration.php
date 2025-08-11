@@ -9,8 +9,9 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
 
 /**
  * PanelAlpha API credentials.
+ *
  * @property-read string $hostname PanelAlpha server hostname
- * @property-read int|null $port PanelAlpha serves port
+ * @property-read int|null $port PanelAlpha server port
  * @property-read string $api_token PanelAlpha API key
  */
 class Configuration extends DataSet
