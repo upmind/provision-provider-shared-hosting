@@ -121,14 +121,19 @@ class Api
             $name = (string) $params->customer_name;
         }
 
-        $nameArray = explode(' ', $name, 2);
+        // Split name into first and last name and trim them
+        $nameArray = array_map('trim', explode(' ', $name, 2));
 
         $query = [
             'first_name' => mb_substr($nameArray[0], 0, 255),
-            'last_name' => isset($nameArray[1]) ? mb_substr($nameArray[1], 0, 255) : '',
             'email' => $params->email,
             'password' => $params->password ?: Helper::generatePassword(),
         ];
+
+        // Set last name if it exists
+        if (isset($nameArray[1]) && $nameArray[1] !== '') {
+            $query['last_name'] = mb_substr($nameArray[1], 0, 255);
+        }
 
         $result = $this->makeRequest('users', $query, 'POST');
 
