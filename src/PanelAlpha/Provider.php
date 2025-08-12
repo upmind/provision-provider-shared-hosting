@@ -74,6 +74,8 @@ class Provider extends Category implements ProviderInterface
         }
 
         try {
+            $message = 'Account created without hosting instance as no domain was provided';
+
             $userId = $this->findOrCreateUser($params, $name);
 
             $serviceId = $this->api()->createService($params, $userId);
@@ -81,9 +83,11 @@ class Provider extends Category implements ProviderInterface
             // Create instance if domain is provided.
             if ($params->domain) {
                 $this->api()->createInstance($userId, $serviceId, $params->domain, $name);
+
+                $message = 'Account created with hosting instance for: ' . $params->domain;
             }
 
-            return $this->_getInfo($userId, $params->domain, 'Account created');
+            return $this->_getInfo($userId, $params->domain, $message);
         } catch (Throwable $e) {
             $this->handleException($e);
         }
