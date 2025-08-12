@@ -324,12 +324,12 @@ class Api
         }
 
         foreach ($services as $s) {
-            if (isset($s["domain"]) && $s["domain"] === $domain) {
+            if (isset($s['domain']) && mb_strtolower($s['domain']) === mb_strtolower($domain)) {
                 return $s;
             }
         }
 
-        throw ProvisionFunctionError::create("Domain does not exist")
+        throw ProvisionFunctionError::create('Domain does not exist')
             ->withData([
                 'domain' => $domain,
             ]);
