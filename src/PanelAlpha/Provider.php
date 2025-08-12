@@ -58,11 +58,6 @@ class Provider extends Category implements ProviderInterface
      */
     public function create(CreateParams $params): AccountInfo
     {
-        // Domain is not required to create a service, but it is required to create an instance.
-        if (empty($params->domain)) {
-            $this->errorResult('Domain is required to create an account instance');
-        }
-
         if (mb_strlen($params->email) > 255) {
             $this->errorResult('Email address is too long');
         }
@@ -74,10 +69,19 @@ class Provider extends Category implements ProviderInterface
         // Generate a random username from the domain, if username is not provided.
         $name = $params->username ?? $this->generateName((string) $params->domain);
 
+        if (empty(trim($name))) {
+            $name = $params->email;
+        }
+
         try {
             $userId = $this->findOrCreateUser($params, $name);
 
-            $this->api()->createService($params, $userId, $name);
+            $serviceId = $this->api()->createService($params, $userId);
+
+            // Create instance if domain is provided.
+            if ($params->domain) {
+                $this->api()->createInstance($userId, $serviceId, $params->domain, $name);
+            }
 
             return $this->_getInfo($userId, $params->domain, 'Account created');
         } catch (Throwable $e) {

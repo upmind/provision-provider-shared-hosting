@@ -83,7 +83,7 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function createService(CreateParams $params, string $userId, string $name): void
+    public function createService(CreateParams $params, string $userId): string
     {
         $planId = $params->package_name;
 
@@ -92,7 +92,7 @@ class Api
         }
 
         $query = [
-            "plan_id" => $planId,
+            'plan_id' => $planId,
         ];
 
         $service = $this->makeRequest("users/{$userId}/services", $query, 'POST');
@@ -105,19 +105,31 @@ class Api
                 ]);
         }
 
-        $serviceId = $service['id'];
+        return (string) $service['id'];
+    }
 
+    public function createInstance(string $userId, $serviceId, string $domain, string $name): string
+    {
         $query = [
-            "user_id" => $userId,
-            "service_id" => $serviceId,
-            "name" => $name,
+            'user_id' => $userId,
+            'service_id' => $serviceId,
+            'name' => $name,
+            'domain' => $domain,
         ];
 
-        if ($params->domain) {
-            $query["domain"] = $params->domain;
+        $result = $this->makeRequest('instances', $query, 'POST');
+
+        if (!isset($result['id'])) {
+            throw ProvisionFunctionError::create('Failed to create instance')
+                ->withData([
+                    'user_id' => $userId,
+                    'service_id' => $serviceId,
+                    'name' => $name,
+                    'domain' => $domain,
+                ]);
         }
 
-        $this->makeRequest("instances", $query, "POST");
+        return (string) $result['id'];
     }
 
     /**
