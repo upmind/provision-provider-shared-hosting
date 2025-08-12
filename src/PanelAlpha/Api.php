@@ -95,7 +95,17 @@ class Api
             "plan_id" => $planId,
         ];
 
-        $serviceId = $this->makeRequest("users/{$userId}/services", $query, "POST")["id"];
+        $service = $this->makeRequest("users/{$userId}/services", $query, 'POST');
+
+        if (!isset($service['id'])) {
+            throw ProvisionFunctionError::create('Failed to create service')
+                ->withData([
+                    'user_id' => $userId,
+                    'plan_id' => $planId,
+                ]);
+        }
+
+        $serviceId = $service['id'];
 
         $query = [
             "user_id" => $userId,
