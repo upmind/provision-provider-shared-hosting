@@ -80,6 +80,8 @@ class Api
     }
 
     /**
+     * Create a new service for the user and return the service ID.
+     *
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -95,9 +97,9 @@ class Api
             'plan_id' => $planId,
         ];
 
-        $service = $this->makeRequest("users/{$userId}/services", $query, 'POST');
+        $result = $this->makeRequest("users/{$userId}/services", $query, 'POST');
 
-        if (!isset($service['id'])) {
+        if (empty($result) || !isset($result['id'])) {
             throw ProvisionFunctionError::create('Failed to create service')
                 ->withData([
                     'user_id' => $userId,
@@ -105,9 +107,15 @@ class Api
                 ]);
         }
 
-        return (string) $service['id'];
+        return (string) $result['id'];
     }
 
+    /**
+     * Create a new instance for the user and return the instance ID.
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function createInstance(string $userId, $serviceId, string $domain, string $name): string
     {
         $query = [
@@ -119,7 +127,7 @@ class Api
 
         $result = $this->makeRequest('instances', $query, 'POST');
 
-        if (!isset($result['id'])) {
+        if (empty($result) || !isset($result['id'])) {
             throw ProvisionFunctionError::create('Failed to create instance')
                 ->withData([
                     'user_id' => $userId,
@@ -138,7 +146,7 @@ class Api
      */
     public function createUser(CreateParams $params, string $name): array
     {
-        // Prep name
+        // If customer name is provided, use it; otherwise, keep using the existing variable.
         if (!empty($params->customer_name)) {
             $name = (string) $params->customer_name;
         }
@@ -159,10 +167,11 @@ class Api
 
         $result = $this->makeRequest('users', $query, 'POST');
 
-        if (!isset($result['id'])) {
+        if (empty($result) || !isset($result['id'])) {
             throw ProvisionFunctionError::create('Failed to create user')
                 ->withData([
                     'name' => $name,
+                    'customer_name' => $params->customer_name,
                     'email' => $params->email,
                 ]);
         }
@@ -174,7 +183,7 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function getAccountData(string $userId, ?string $domain): array
+    public function getAccountData(string $userId, ?string $serviceId, ?string $domain): array
     {
         if (!is_numeric($userId)) {
             $userId = $this->findUserIdByEmail($userId);
@@ -182,17 +191,37 @@ class Api
 
         $account = $this->getUserConfig($userId);
 
-        $service = $this->getService($userId, $domain);
+        // If domain is provided, we will try to get the instance data.
+        if ($domain !== null) {
+            $instance = $this->getInstance($userId, $domain);
+
+            return [
+                'customer_id' => $userId,
+                'subscription_id' => $instance['service']['id'] ?? null,
+                'username' => $account['email'],
+                'domain' => $instance['domain'] ?? null,
+                'reseller' => false,
+                'server_hostname' => $this->configuration->hostname,
+                'package_name' => $instance['plan_name'] ?? 'unknown',
+                'suspended' => isset($instance['service']['status']) && $instance['service']['status'] === 'suspended',
+                'suspend_reason' => null,
+                'ip' => $instance['host_ip_address'] ?? null,
+                'nameservers' => $instance['host_nameservers'] ?? [],
+            ];
+        }
+
+        // Otherwise, we will get the service data.
+        $service = $this->getService($userId, $serviceId);
 
         return [
             'customer_id' => $userId,
             'subscription_id' => $service['id'] ?? null,
             'username' => $account['email'],
-            'domain' => $service['domain'] ?? null,
+            'domain' => null,
             'reseller' => false,
             'server_hostname' => $this->configuration->hostname,
             'package_name' => $service['plan_name'] ?? 'unknown',
-            'suspended' => isset($service['service']['status']) && $service['service']['status'] === 'suspended',
+            'suspended' => isset($service['status']) && $service['status'] === 'suspended',
             'suspend_reason' => null,
             'ip' => $service['host_ip_address'] ?? null,
             'nameservers' => $service['host_nameservers'] ?? [],
@@ -206,6 +235,15 @@ class Api
     public function getUserConfig(string $userId): array
     {
         return $this->makeRequest("users/{$userId}");
+    }
+
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function getUserServices(string $userId): array
+    {
+        return $this->makeRequest("users/{$userId}/services");
     }
 
     /**
@@ -259,23 +297,23 @@ class Api
      */
     public function findUserIdByEmail(string $email): string
     {
-        $user = $this->makeRequest('users/email', ['email' => $email]);
+        $result = $this->makeRequest('users/email', ['email' => $email]);
 
-        if (empty($user) || !isset($user['id'])) {
+        if (empty($result) || !isset($result['id'])) {
             throw ProvisionFunctionError::create('User does not exist')
                 ->withData([
                     'email' => $email,
                 ]);
         }
 
-        return (string) $user['id'];
+        return (string) $result['id'];
     }
 
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    private function getServiceIds(string $userId): array
+    private function getServiceIds(string $userId, string $domain): array
     {
         $services = $this->makeRequest("users/$userId/services");
         $ids = [];
@@ -315,22 +353,55 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    private function getService(string $userId, ?string $domain = null)
+    private function getService(string $userId, ?string $serviceId = null)
     {
-        $services = $this->getInstances($userId);
+        $services = $this->getUserServices($userId);
 
-        if (!$domain) {
+        if (empty($services)) {
+            return [];
+        }
+
+        // If no service ID is provided, return the first result.
+        if ($serviceId === null) {
             return $services[0];
         }
 
-        foreach ($services as $s) {
-            if (isset($s['domain']) && mb_strtolower($s['domain']) === mb_strtolower($domain)) {
-                return $s;
+        foreach ($services as $service) {
+            if (isset($service['id']) && $serviceId === (string) $service['id']) {
+                return $service;
             }
         }
 
-        throw ProvisionFunctionError::create('Domain does not exist')
+        throw ProvisionFunctionError::create('User Service not found')
             ->withData([
+                'user_id' => $userId,
+                'service_id' => $serviceId,
+            ]);
+    }
+
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getInstance(string $userId, string $domain): array
+    {
+        $instances = $this->getInstances($userId);
+
+        foreach ($instances as $instance) {
+            if (empty($instance) || !isset($instance['domain'])) {
+                continue; // Skip instances without a domain
+            }
+
+            if (mb_strtolower($instance['domain']) !== mb_strtolower($domain)) {
+                continue; // Skip if the domain does not match
+            }
+
+            return $instance;
+        }
+
+        throw ProvisionFunctionError::create('User Instance not found for domain')
+            ->withData([
+                'user_id' => $userId,
                 'domain' => $domain,
             ]);
     }
@@ -339,7 +410,7 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function deleteAccount(string $userId): void
+    public function deleteAccount(string $userId, string $domain): void
     {
         if (!is_numeric($userId)) {
             $userId = $this->findUserIdByEmail($userId);
@@ -352,21 +423,34 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function updatePackage(string $userId, string $packageName, string $domain): void
+    public function updatePackage(string $userId, string $packageName, ?string $serviceId, ?string $domain): void
     {
         if (!is_numeric($userId)) {
             $userId = $this->findUserIdByEmail($userId);
         }
 
-        $service = $this->getService($userId, $domain);
+        // If domain is provided, we will get the service ID from there.
+        if ($domain !== null) {
+            $service = $this->getService($userId, $domain);
+            $serviceId = (string) $service["service"]["id"];
+        }
+
+        // If we don't have a service ID by now, we cannot proceed.
+        if ($serviceId === null) {
+            throw ProvisionFunctionError::create('Service ID or Domain must be provided to change package')
+                ->withData([
+                    'user_id' => $userId,
+                    'package_name' => $packageName,
+                    'service_id' => $serviceId,
+                    'domain' => $domain,
+                ]);
+        }
 
         $planId = $packageName;
 
         if (!is_numeric($planId)) {
             $planId = $this->getPlanId($planId);
         }
-
-        $serviceId = $service["service"]["id"];
 
         $query = [
             'plan_id' => $planId,
@@ -379,15 +463,22 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function getAccountUsage(string $userId, ?string $domain): UsageData
+    public function getAccountUsage(string $userId, ?string $serviceId, ?string $domain): UsageData
     {
         if (!is_numeric($userId)) {
             $userId = $this->findUserIdByEmail($userId);
         }
 
-        $service = $this->getService($userId, $domain);
+        // Get the service stats by the domain, otherwise by the service ID.
+        if ($domain !== null) {
+            $instance = $this->getInstance($userId, $domain);
+            $service = $this->getService($userId, (string) $instance['service']['id']);
+        } else {
+            $service = $this->getService($userId, $serviceId);
+        }
 
         $usage = $service["stats"] ?? null;
+
         if (!$usage) {
             return new UsageData();
         }

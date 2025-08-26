@@ -58,20 +58,8 @@ class Provider extends Category implements ProviderInterface
      */
     public function create(CreateParams $params): AccountInfo
     {
-        if (mb_strlen($params->email) > 255) {
-            $this->errorResult('Email address is too long');
-        }
-
-        if ($params->password !== null && mb_strlen($params->password) < 8) {
-            $this->errorResult('Password must be at least 8 characters long');
-        }
-
-        // Generate a random username from the domain, if username is not provided.
-        $name = $params->username ?? $this->generateName((string) $params->domain);
-
-        if (empty(trim($name))) {
-            $name = $params->email;
-        }
+        // Generate a random username from the domain (or email if domain is null), if username is not provided.
+        $name = $params->username ?? $this->generateName($params->domain ?? $params->email);
 
         try {
             $message = 'Account created without hosting instance as no domain was provided';
@@ -84,10 +72,10 @@ class Provider extends Category implements ProviderInterface
             if ($params->domain) {
                 $this->api()->createInstance($userId, $serviceId, $params->domain, $name);
 
-                $message = 'Account created with hosting instance for: ' . $params->domain;
+                $message = 'Account created with hosting instance for domain: ' . $params->domain;
             }
 
-            return $this->_getInfo($userId, $params->domain, $message);
+            return $this->_getInfo($userId, $serviceId, $params->domain, $message);
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -97,9 +85,9 @@ class Provider extends Category implements ProviderInterface
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    protected function _getInfo(string $userId, ?string $domain, string $message): AccountInfo
+    protected function _getInfo(string $userId, ?string $serviceId, ?string $domain, string $message): AccountInfo
     {
-        $info = $this->api()->getAccountData($userId, $domain);
+        $info = $this->api()->getAccountData($userId, $serviceId, $domain);
 
         return AccountInfo::create($info)->setMessage($message);
     }
@@ -119,6 +107,7 @@ class Provider extends Category implements ProviderInterface
                 is_int($params->customer_id) || is_string($params->customer_id)
                     ? (string) $params->customer_id
                     : $params->username,
+                $params->subscription_id === null ? null : (string) $params->subscription_id,
                 $params->domain,
                 'Account info retrieved',
             );
@@ -140,6 +129,7 @@ class Provider extends Category implements ProviderInterface
                 is_int($params->customer_id) || is_string($params->customer_id)
                     ? (string) $params->customer_id
                     : $params->username,
+                $params->subscription_id === null ? null : (string) $params->subscription_id,
                 $params->domain
             );
 
@@ -186,6 +176,10 @@ class Provider extends Category implements ProviderInterface
      */
     public function changePassword(ChangePasswordParams $params): EmptyResult
     {
+        if (mb_strlen($params->password) < 8) {
+            $this->errorResult('Password must be at least 8 characters long');
+        }
+
         try {
             // Use customer_id if available, otherwise use username (should be email)
             $this->api()->updatePassword(
@@ -211,8 +205,8 @@ class Provider extends Category implements ProviderInterface
     public function changePackage(ChangePackageParams $params): AccountInfo
     {
         try {
-            if (!$params->domain) {
-                $this->errorResult('Domain is required');
+            if (!$params->domain && !$params->subscription_id) {
+                $this->errorResult('Either domain or subscription identifier is required');
             }
 
             // Use customer_id if available, otherwise use username (should be email)
@@ -220,9 +214,19 @@ class Provider extends Category implements ProviderInterface
                 ? (string) $params->customer_id
                 : $params->username;
 
-            $this->api()->updatePackage($userId, $params->package_name, $params->domain);
+            $this->api()->updatePackage(
+                $userId,
+                $params->package_name,
+                $params->subscription_id === null ? null : (string) $params->subscription_id,
+                $params->domain
+            );
 
-            return $this->_getInfo($userId, $params->domain, 'Package changed');
+            return $this->_getInfo(
+                $userId,
+                $params->subscription_id === null ? null : (string) $params->subscription_id,
+                $params->domain,
+                'Package changed'
+            );
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -245,7 +249,12 @@ class Provider extends Category implements ProviderInterface
 
             $this->api()->suspendAccount($userId);
 
-            return $this->_getInfo($userId, $params->domain, 'Account suspended');
+            return $this->_getInfo(
+                $userId,
+                $params->subscription_id === null ? null : (string) $params->subscription_id,
+                $params->domain,
+                'Account suspended'
+            );
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -268,7 +277,12 @@ class Provider extends Category implements ProviderInterface
 
             $this->api()->unsuspendAccount($userId);
 
-            return $this->_getInfo($userId, $params->domain, 'Account unsuspended');
+            return $this->_getInfo(
+                $userId,
+                $params->subscription_id === null ? null : (string) $params->subscription_id,
+                $params->domain,
+                'Account unsuspended'
+            );
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -285,9 +299,11 @@ class Provider extends Category implements ProviderInterface
     {
         try {
             // Use customer_id if available, otherwise use username
-            $this->api()->deleteAccount(is_int($params->customer_id) || is_string($params->customer_id)
-                ? (string) $params->customer_id
-                : $params->username
+            $this->api()->deleteAccount(
+                is_int($params->customer_id) || is_string($params->customer_id)
+                    ? (string) $params->customer_id
+                    : $params->username,
+                $params->domain
             );
 
             return $this->emptyResult('Account deleted');
@@ -389,6 +405,15 @@ class Provider extends Category implements ProviderInterface
             return $this->api()->findUserIdByEmail($params->email);
         } catch (ProvisionFunctionError $e) {
             // Create user if not found
+        }
+
+        // If we need to create a user, validate params first.
+        if (mb_strlen($params->email) > 255) {
+            $this->errorResult('Email address is too long');
+        }
+
+        if ($params->password !== null && mb_strlen($params->password) < 8) {
+            $this->errorResult('Password must be at least 8 characters long');
         }
 
         return (string) $this->api()->createUser($params, $name)['id'];
