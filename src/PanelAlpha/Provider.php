@@ -310,15 +310,20 @@ class Provider extends Category implements ProviderInterface
     public function terminate(AccountUsername $params): EmptyResult
     {
         try {
-            // Use customer_id if available, otherwise use username
-            $this->api()->deleteAccount(
-                is_int($params->customer_id) || is_string($params->customer_id)
-                    ? (string) $params->customer_id
-                    : $params->username,
-                $params->domain
-            );
+            $userId = is_int($params->customer_id) || is_string($params->customer_id)
+                ? (string) $params->customer_id
+                : $params->username;
 
-            return $this->emptyResult('Account deleted');
+            $subscriptionId = $params->subscription_id === null ? null : (string) $params->subscription_id;
+
+            // Use customer_id if available, otherwise use username
+            $this->api()->deleteAccount($userId, $subscriptionId, $params->domain);
+
+            return $this->emptyResult('Account deleted', [], [
+                'user_id' => $userId,
+                'subscription_id' => $params->domain === null ? $subscriptionId : null,
+                'domain' => $params->domain,
+            ]);
         } catch (Throwable $e) {
             $this->handleException($e);
         }

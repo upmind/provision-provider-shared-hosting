@@ -254,23 +254,16 @@ class Api
             $serviceId = isset($instance['service']['id']) ? (string) $instance['service']['id'] : null;
         }
 
-        if ($serviceId !== null) {
-            $this->makeRequest("users/$userId/services/$serviceId/suspend", null, 'PUT');
-
-            return;
+        if ($serviceId === null) {
+            throw ProvisionFunctionError::create('Service ID or Domain must be provided to suspend account')
+                ->withData([
+                    'user_id' => $userId,
+                    'service_id' => $serviceId,
+                    'domain' => $domain,
+                ]);
         }
 
-        $services = $this->getUserServices($userId);
-
-        foreach ($services as $service) {
-            if (!isset($service['id'])) {
-                continue; // Skip invalid service results
-            }
-
-            $serviceId = $service['id'];
-
-            $this->makeRequest("users/$userId/services/$serviceId/suspend", null, 'PUT');
-        }
+        $this->makeRequest("users/$userId/services/$serviceId/suspend", null, 'PUT');
     }
 
     /**
@@ -289,23 +282,16 @@ class Api
             $serviceId = isset($instance['service']['id']) ? (string) $instance['service']['id'] : null;
         }
 
-        if ($serviceId !== null) {
-            $this->makeRequest("users/$userId/services/$serviceId/suspend", null, 'PUT');
-
-            return;
+        if ($serviceId === null) {
+            throw ProvisionFunctionError::create('Service ID or Domain must be provided to unsuspend account')
+                ->withData([
+                    'user_id' => $userId,
+                    'service_id' => $serviceId,
+                    'domain' => $domain,
+                ]);
         }
 
-        $services = $this->getUserServices($userId);
-
-        foreach ($services as $service) {
-            if (!isset($service['id'])) {
-                continue; // Skip invalid service results
-            }
-
-            $serviceId = $service['id'];
-
-            $this->makeRequest("users/$userId/services/$serviceId/unsuspend", null, 'PUT');
-        }
+        $this->makeRequest("users/$userId/services/$serviceId/unsuspend", null, 'PUT');
     }
 
     /**
@@ -332,13 +318,34 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function deleteAccount(string $userId, string $domain): void
+    public function deleteAccount(string $userId, ?string $serviceId, ?string $domain): void
     {
         if (!is_numeric($userId)) {
             $userId = $this->findUserIdByEmail($userId);
         }
 
-        $this->makeRequest("users/$userId", null, 'DELETE');
+        // If domain is provided, we will get the service ID from there and ignore the provided service ID.
+        if ($domain !== null) {
+            $instance = $this->getInstance($userId, $domain);
+
+            $this->deleteInstance((string) $instance['id']);
+
+            // Set the service ID from the instance for later use.
+            $serviceId = isset($instance['service']['id']) ? (string) $instance['service']['id'] : null;
+        }
+
+        if ($serviceId !== null) {
+            $service = $this->getService($userId, $serviceId);
+
+            $serviceId = (string) $service['id'];
+
+            $this->makeRequest("services/{$serviceId}", null, 'DELETE');
+        }
+
+        // If no other services linked to the user, delete user.
+        if (empty($this->getUserServices($userId))) {
+            $this->makeRequest("users/$userId", null, 'DELETE');
+        }
     }
 
     /**
@@ -500,7 +507,11 @@ class Api
         $services = $this->getUserServices($userId);
 
         if (empty($services)) {
-            return [];
+            throw ProvisionFunctionError::create('User Service not found')
+                ->withData([
+                    'user_id' => $userId,
+                    'service_id' => $serviceId,
+                ]);
         }
 
         // If no service ID is provided, return the first result.
@@ -546,6 +557,15 @@ class Api
                 'user_id' => $userId,
                 'domain' => $domain,
             ]);
+    }
+
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function deleteInstance(string $instanceId): void
+    {
+        $this->makeRequest("instances/{$instanceId}", null, 'DELETE');
     }
 
     /**
