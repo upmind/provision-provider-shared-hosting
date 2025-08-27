@@ -204,26 +204,24 @@ class Provider extends Category implements ProviderInterface
      */
     public function changePackage(ChangePackageParams $params): AccountInfo
     {
-        try {
-            if (!$params->domain && !$params->subscription_id) {
-                $this->errorResult('Either domain or subscription identifier is required');
-            }
+        if (!$params->domain && !$params->subscription_id) {
+            $this->errorResult('Either domain or subscription identifier is required');
+        }
 
+        try {
             // Use customer_id if available, otherwise use username (should be email)
             $userId = is_int($params->customer_id) || is_string($params->customer_id)
                 ? (string) $params->customer_id
                 : $params->username;
 
-            $this->api()->updatePackage(
-                $userId,
-                $params->package_name,
-                $params->subscription_id === null ? null : (string) $params->subscription_id,
-                $params->domain
-            );
+            $subscriptionId = $params->subscription_id === null ? null : (string) $params->subscription_id;
 
+            $this->api()->updatePackage($userId, $params->package_name, $subscriptionId, $params->domain);
+
+            // Show either subscription_id or domain, depending on which was used to identify the account.
             return $this->_getInfo(
                 $userId,
-                $params->subscription_id === null ? null : (string) $params->subscription_id,
+                $params->domain === null ? $subscriptionId : null,
                 $params->domain,
                 'Package changed'
             );
@@ -241,17 +239,24 @@ class Provider extends Category implements ProviderInterface
      */
     public function suspend(SuspendParams $params): AccountInfo
     {
+        if (!$params->domain && !$params->subscription_id) {
+            $this->errorResult('Either domain or subscription identifier is required');
+        }
+
         try {
             // Use customer_id if available, otherwise use username
             $userId = is_int($params->customer_id) || is_string($params->customer_id)
                 ? (string) $params->customer_id
                 : $params->username;
 
-            $this->api()->suspendAccount($userId);
+            $subscriptionId = $params->subscription_id === null ? null : (string) $params->subscription_id;
 
+            $this->api()->suspendAccount($userId, $subscriptionId, $params->domain);
+
+            // Show either subscription_id or domain, depending on which was used to identify the account.
             return $this->_getInfo(
                 $userId,
-                $params->subscription_id === null ? null : (string) $params->subscription_id,
+                $params->domain === null ? $subscriptionId : null,
                 $params->domain,
                 'Account suspended'
             );
@@ -269,17 +274,24 @@ class Provider extends Category implements ProviderInterface
      */
     public function unSuspend(AccountUsername $params): AccountInfo
     {
+        if (!$params->domain && !$params->subscription_id) {
+            $this->errorResult('Either domain or subscription identifier is required');
+        }
+
         try {
             // Use customer_id if available, otherwise use username
             $userId = is_int($params->customer_id) || is_string($params->customer_id)
                 ? (string) $params->customer_id
                 : $params->username;
 
-            $this->api()->unsuspendAccount($userId);
+            $subscriptionId = $params->subscription_id === null ? null : (string) $params->subscription_id;
 
+            $this->api()->unsuspendAccount($userId, $subscriptionId, $params->domain);
+
+            // Show either subscription_id or domain, depending on which was used to identify the account.
             return $this->_getInfo(
                 $userId,
-                $params->subscription_id === null ? null : (string) $params->subscription_id,
+                $params->domain === null ? $subscriptionId : null,
                 $params->domain,
                 'Account unsuspended'
             );
