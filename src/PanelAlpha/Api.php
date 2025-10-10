@@ -401,12 +401,11 @@ class Api
         // Get the service stats by the domain, otherwise by the service ID.
         if ($domain !== null) {
             $instance = $this->getInstance($userId, $domain);
-            $service = $this->getService($userId, (string) $instance['service']['id']);
         } else {
             $service = $this->getService($userId, $serviceId);
         }
 
-        $usage = $service["stats"] ?? null;
+        $usage = $instance['stats'] ?? $service["stats"] ?? null;
 
         if (!$usage) {
             return new UsageData();
