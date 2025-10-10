@@ -1,0 +1,11 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Result of method Upmind\\\\ProvisionProviders\\\\SharedHosting\\\\Enhance\\\\Provider\\:\\:handleException\\(\\) \\(void\\) is used\\.$#"
+			count: 10
+			path: src/Enhance/Provider.php
+
+		-
+			message: "#^Unsafe usage of new static\\(\\)\\.$#"
+			count: 1
+			path: src/PleskOnyxRPC/Errors/ServiceMisconfiguration.php
