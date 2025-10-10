@@ -8,6 +8,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Throwable;
 use Carbon\Carbon;
+use GuzzleHttp\Exception\ClientException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -414,7 +415,18 @@ class Provider extends Category implements ProviderInterface
     private function findOrCreateUser(CreateParams $params, string $name): string
     {
         if ($params->customer_id !== null) {
-            return (string) $params->customer_id;
+            try {
+                $user = $this->api()->makeRequest('users/' . $params->customer_id);
+
+                if (0 === preg_match('/\_deleted\_\d+$/', $user['email'])) {
+                    return (string) $params->customer_id;
+                }
+            } catch (ClientException $e) {
+                // ignore
+                if ($e->getResponse()->getStatusCode() !== 404) {
+                    throw $e;
+                }
+            }
         }
 
         // re-use customer email address for stack user
