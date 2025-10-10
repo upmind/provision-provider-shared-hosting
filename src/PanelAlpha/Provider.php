@@ -365,7 +365,7 @@ class Provider extends Category implements ProviderInterface
             $body = trim($response->getBody()->__toString());
             $responseData = json_decode($body, true);
 
-            $errorMessage = $responseData['message'] ?? 'unknown error';
+            $errorMessage = $responseData['message'] ?? $responseData['error'] ?? 'unknown error';
 
             $this->errorResult(
                 sprintf('Provider API Error: %s', $errorMessage),
