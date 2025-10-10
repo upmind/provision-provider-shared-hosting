@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.6.27](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.27) - 2025-10-10
+
+- Implement PanelAlpha provider
+
 ## [v6.6.26](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.26) - 2025-05-08
 
 - Update upmind/enhance-sdk to v12.3.0
