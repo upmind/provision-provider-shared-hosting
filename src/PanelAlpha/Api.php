@@ -188,7 +188,7 @@ class Api
                 'package_name' => $instance['plan_name'] ?? 'unknown',
                 'suspended' => isset($instance['service']['status']) && $instance['service']['status'] === 'suspended',
                 'suspend_reason' => null,
-                'ip' => $instance['host_ip_address'] ?? null,
+                'ip' => $instance['host_ip_address'] ?: null,
                 'nameservers' => $instance['host_nameservers'] ?? [],
             ];
         }
