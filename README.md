@@ -44,6 +44,7 @@ The following providers are currently implemented:
   - [SolidCP](https://solidcp.com/kb/)
   - [DirectAdmin](https://www.directadmin.com/api.php)
   - [CentOS Web Panel (CWP)](https://docs.control-webpanel.com/docs/developer-tools/api-manager/functions)
+  - [PanelAlpha](https://www.panelalpha.com/api-documentation/)
 
 ## Functions
 
