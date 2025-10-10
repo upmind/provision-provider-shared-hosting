@@ -40,10 +40,10 @@ class Api
                 case 'POST':
                 case 'PUT':
                 case 'PATCH':
-                case 'DELETE':
                     $requestParams['json'] = $body;
                     break;
                 case 'GET':
+                case 'DELETE':
                     $requestParams['query'] = $body;
                     break;
             }
