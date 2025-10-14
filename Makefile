@@ -16,13 +16,13 @@ help:
 	@echo "   make composer-install      : Install composer dependencies"
 
 # Typing 'make setup-php81' will start the dev environment with PHP 8.1
-setup-php81: stop-containers --prep-dockerfile-php81 start-containers --remove-packages composer-install
+setup-php81: --prep-docker-compose-file stop-containers --prep-dockerfile-php81 start-containers --remove-packages composer-install
 
 # Typing 'make setup-php82' will start the dev environment with PHP 8.2
-setup-php82: stop-containers --prep-dockerfile-php82 start-containers --remove-packages composer-install
+setup-php82: --prep-docker-compose-file stop-containers --prep-dockerfile-php82 start-containers --remove-packages composer-install
 
 # Typing 'make setup-php83' will start the dev environment with PHP 8.3
-setup-php83: stop-containers --prep-dockerfile-php83 start-containers --remove-packages composer-install
+setup-php83: --prep-docker-compose-file stop-containers --prep-dockerfile-php83 start-containers --remove-packages composer-install
 
 # Get a shell on the PHP container
 shell:
