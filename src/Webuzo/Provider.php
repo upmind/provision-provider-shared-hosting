@@ -144,10 +144,6 @@ class Provider extends Category implements ProviderInterface
     {
         $loginUrl = $this->api(true)->getLoginUrl($params->username);
 
-        if (Str::contains($loginUrl, 'webuzo.whgi.net')) {
-            $loginUrl = str_replace('webuzo.whgi.net', $this->configuration->hostname, $loginUrl);
-        }
-
         return LoginUrl::create()
             ->setLoginUrl($loginUrl);
     }
