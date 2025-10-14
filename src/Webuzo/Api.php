@@ -12,6 +12,7 @@ use Upmind\ProvisionProviders\SharedHosting\Data\UnitsConsumed;
 use Upmind\ProvisionProviders\SharedHosting\Data\UsageData;
 use Upmind\ProvisionProviders\SharedHosting\Webuzo\Data\Configuration;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
+use Illuminate\Support\Str;
 
 class Api
 {
@@ -139,6 +140,14 @@ class Api
     public function getAccountData(string $username): array
     {
         $account = $this->getUserDetails($username);
+        $config = $this->makeRequest('webuzoconfigs');
+
+        $nameservers = [];
+        foreach ($config['webuzoconfigs'] as $key => $value) {
+            if (Str::startsWith($key, 'WU_NS')) {
+                $nameservers[] = trim($value);
+            }
+        }
 
         return [
             'username' => $username,
@@ -148,6 +157,7 @@ class Api
             'package_name' => $account['plan'] !== '' ? $account['plan'] : 'Unknown',
             'suspended' => $account['status'] === 'suspended',
             'ip' => $account['ip'] ?? null,
+            'nameservers' => $nameservers,
         ];
     }
 
