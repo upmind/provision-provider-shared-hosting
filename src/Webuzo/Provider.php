@@ -94,7 +94,7 @@ class Provider extends Category implements ProviderInterface
         $username = preg_replace('/^[^a-z]+/', '', $username);
 
         // Limit to MAX_USERNAME_LENGTH characters
-        return substr($username, 0, self::MAX_USERNAME_LENGTH);
+        return substr($username, 0, self::MAX_USERNAME_LENGTH - 2) . rand(0, 9) . rand(0, 9);
     }
 
     /**
