@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.6.28](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.28) - 2025-10-14
+
+- Implement Webuzo provider
+
 ## [v6.6.27](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.27) - 2025-10-10
 
 - Implement PanelAlpha provider
