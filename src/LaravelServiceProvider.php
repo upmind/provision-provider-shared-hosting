@@ -36,10 +36,7 @@ class LaravelServiceProvider extends ProvisionServiceProvider
         $this->bindProvider('shared-hosting', 'solidcp', SolidCP::class);
         $this->bindProvider('shared-hosting', 'direct-admin', DirectAdmin::class);
         $this->bindProvider('shared-hosting', 'centos-web', CentosWeb::class);
-<<<<<<< HEAD
         $this->bindProvider('shared-hosting', 'panel-alpha', PanelAlpha::class);
-=======
         $this->bindProvider('shared-hosting', 'webuzo', Webuzo::class);
->>>>>>> 2c59f74 (Init Webuzo provider)
     }
 }
