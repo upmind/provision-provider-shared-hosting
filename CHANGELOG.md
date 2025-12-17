@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.6.30](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.30) - 2025-12-17
+
+- Implement SPanel provider
+
 ## [v6.6.29](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.29) - 2025-10-14
 
 - Fix illuminate/support dependency
