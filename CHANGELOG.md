@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.13.0](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.13.0) - 2025-12-17
+
+- Implement SPanel provider
+
 ## [v6.12.0](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.12.0) - 2025-10-14
 
 - Implement Webuzo provider
