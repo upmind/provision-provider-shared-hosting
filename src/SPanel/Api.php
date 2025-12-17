@@ -6,9 +6,11 @@ namespace Upmind\ProvisionProviders\SharedHosting\SPanel;
 
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 use JsonException;
 use Throwable;
 use GuzzleHttp\HandlerStack;
+use Illuminate\Support\Str;
 use Upmind\ProvisionBase\Helper;
 use Upmind\ProvisionProviders\SharedHosting\Data\CreateParams;
 use Upmind\ProvisionProviders\SharedHosting\Data\UnitsConsumed;
@@ -51,8 +53,32 @@ class Api
         $body['token'] = $this->configuration->api_token;
         $requestParams['form_params'] = $body;
 
-        $response = $this->client->request($method, '/spanel/api.php', $requestParams);
-        $result = $response->getBody()->getContents();
+        try {
+            $response = $this->client->request(
+                $method,
+                sprintf('/%s/api.php', ltrim($this->configuration->branding_url ?: 'spanel', '/')),
+                $requestParams
+            );
+        } catch (RequestException $e) {
+            $errorMessage = 'API Request failed';
+            $errorData = [
+                'exception' => $e->getMessage(),
+            ];
+
+            if ($e->hasResponse()) {
+                $response = $e->getResponse();
+                $httpCode = $response->getStatusCode();
+                $httpReason = $response->getReasonPhrase();
+                $errorMessage .= sprintf(': %d %s', $httpCode, $httpReason);
+
+                $errorData['response'] = Str::limit((string)$response->getBody(), 512);
+            }
+
+            throw ProvisionFunctionError::create($errorMessage, $e)
+                ->withData($errorData);
+        }
+
+        $result = (string)$response->getBody();
 
         $response->getBody()->close();
 
@@ -61,7 +87,6 @@ class Api
         }
 
         return $this->parseResponseData($result);
-
     }
 
     /**
@@ -74,14 +99,14 @@ class Api
         } catch (JsonException $ex) {
             throw ProvisionFunctionError::create('Failed to parse response data', $ex)
                 ->withData([
-                    'response' => $response,
+                    'response' => Str::limit($response, 512),
                 ]);
         }
 
         if ($error = $this->getResponseErrorMessage($parsedResult)) {
             throw ProvisionFunctionError::create($error)
                 ->withData([
-                    'response' => $response,
+                    'response' => Str::limit($response, 512),
                 ]);
         }
 

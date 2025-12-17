@@ -12,6 +12,7 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * @property-read string $hostname SPanel server hostname
  * @property-read string $api_token SPanel API token
  * @property-read string $username SPanel username
+ * @property-read string|null $branding_url SPanel installation path (default to "/spanel")
  */
 class Configuration extends DataSet
 {
@@ -20,7 +21,8 @@ class Configuration extends DataSet
         return new Rules([
             'hostname' => ['required', 'domain_name'],
             'username' => ['required', 'string'],
-            'api_token' => ['required', 'string']
+            'api_token' => ['required', 'string'],
+            'branding_url' => ['nullable', 'string', 'in:/spanel,/hostpanel'],
         ]);
     }
 }
