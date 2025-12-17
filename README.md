@@ -46,6 +46,7 @@ The following providers are currently implemented:
   - [CentOS Web Panel (CWP)](https://docs.control-webpanel.com/docs/developer-tools/api-manager/functions)
   - [PanelAlpha](https://www.panelalpha.com/api-documentation/)
   - [Webuzo](https://webuzo.com/docs/api/webuzo-admin-api)
+  - [SPanel](https://www.spanel.io/docs/article/api-functions/api-basics/)
 
 ## Functions
 
