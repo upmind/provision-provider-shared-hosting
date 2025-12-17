@@ -18,6 +18,7 @@ use Upmind\ProvisionProviders\SharedHosting\DirectAdmin\Provider as DirectAdmin;
 use Upmind\ProvisionProviders\SharedHosting\CentosWeb\Provider as CentosWeb;
 use Upmind\ProvisionProviders\SharedHosting\PanelAlpha\Provider as PanelAlpha;
 use Upmind\ProvisionProviders\SharedHosting\Webuzo\Provider as Webuzo;
+use Upmind\ProvisionProviders\SharedHosting\SPanel\Provider as SPanel;
 
 class LaravelServiceProvider extends ProvisionServiceProvider
 {
@@ -38,5 +39,6 @@ class LaravelServiceProvider extends ProvisionServiceProvider
         $this->bindProvider('shared-hosting', 'centos-web', CentosWeb::class);
         $this->bindProvider('shared-hosting', 'panel-alpha', PanelAlpha::class);
         $this->bindProvider('shared-hosting', 'webuzo', Webuzo::class);
+        $this->bindProvider('shared-hosting', 'spanel', SPanel::class);
     }
 }
