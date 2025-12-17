@@ -159,6 +159,27 @@ class Api
     }
 
     /**
+     * Generate and return an SSO login URL.
+     */
+    public function getSsoLoginUrl(string $username): string
+    {
+        $body = [
+            'action' => 'base/sso',
+            'role' => 'user',
+            'username' => $username,
+        ];
+
+        $response = $this->makeRequest($body);
+
+        // First check if we got a valid response.
+        if ($response === null || !isset($response['data']['url'])) {
+            throw ProvisionFunctionError::create('Empty API Response');
+        }
+
+        return $response['data']['url'];
+    }
+
+    /**
      * @throws ProvisionFunctionError
      * @throws \RuntimeException
      * @throws \Throwable

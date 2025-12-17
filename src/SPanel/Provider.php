@@ -138,8 +138,14 @@ class Provider extends Category implements ProviderInterface
      */
     public function getLoginUrl(GetLoginUrlParams $params): LoginUrl
     {
-        return LoginUrl::create()
-            ->setLoginUrl(sprintf('https://%s/spanel/login', $this->configuration->hostname));
+        try {
+            $ssoUrl = $this->api()->getSsoLoginUrl($params->username);
+
+            return LoginUrl::create()
+                ->setLoginUrl($ssoUrl);
+        } catch (Throwable $e) {
+            $this->handleException($e);
+        }
     }
 
     /**
