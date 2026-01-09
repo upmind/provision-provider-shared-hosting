@@ -49,22 +49,15 @@ class Provider extends SharedHosting implements ProviderInterface
      */
     protected const MAX_USERNAME_GENERATION_ATTEMPTS = 5;
 
-    /**
-     * @var WHMv1Credentials
-     */
-    protected $configuration;
-
-    /**
-     * @var Client|null
-     */
-    protected $client;
+    protected WHMv1Credentials $configuration;
+    protected ?Client $client = null;
 
     /**
      * List of whm functions available to this configuration.
      *
      * @var string[]|null
      */
-    protected $functions;
+    protected ?array $functions = null;
 
     public function __construct(WHMv1Credentials $configuration)
     {
@@ -388,20 +381,34 @@ class Provider extends SharedHosting implements ProviderInterface
             }
 
             $this->changeResellerOptions($params->username, $params->reseller_options ?? new ResellerOptionParams());
-        } else {
-            if ($isReseller) {
-                $this->revokeReseller(AccountUsername::create($params));
-            }
+        } elseif ($isReseller) {
+            $this->revokeReseller(AccountUsername::create($params));
         }
 
         $response = $this->makeApiCall('POST', 'changepackage', [
             'user' => $params->username,
             'pkg' => $this->determinePackageName($params->package_name),
         ]);
+
         $this->processResponse($response);
 
-        return $this->getInfo(AccountUsername::create(['username' => $params->username]))
-            ->setMessage('Package/limits updated');
+        $message = 'Package/limits updated';
+        $resultData = ['username' => $params->username];
+
+        // After updating package, update the primary domain if it was provided.
+        if ($params->domain) {
+            $modifyAccountResponse = $this->makeApiCall('POST', 'modifyacct', [
+                'user' => $params->username,
+                'domain' => $params->domain,
+            ]);
+
+            $this->processResponse($modifyAccountResponse);
+
+            $message = 'Package/limits and primary domain updated';
+            $resultData['domain'] = $params->domain;
+        }
+
+        return $this->getInfo(AccountUsername::create($resultData))->setMessage($message);
     }
 
     /**
@@ -985,6 +992,7 @@ class Provider extends SharedHosting implements ProviderInterface
 
             if ($e instanceof TransferException) {
                 if ($e instanceof RequestException && $e->hasResponse()) {
+                    /** @var \Psr\Http\Message\ResponseInterface $response */
                     $response = $e->getResponse();
                     $responseBody = $response->getBody()->__toString();
                     $resultData = json_decode($responseBody, true);
