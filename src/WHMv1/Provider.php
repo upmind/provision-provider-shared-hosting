@@ -359,6 +359,9 @@ class Provider extends SharedHosting implements ProviderInterface
 
         $this->processResponse($response);
 
+        $message = 'Package/limits updated';
+        $resultData = ['username' => $params->username];
+
         // After updating package, update the primary domain if it was provided.
         if ($params->domain) {
             $modifyAccountResponse = $this->makeApiCall('POST', 'modifyacct', [
@@ -367,11 +370,12 @@ class Provider extends SharedHosting implements ProviderInterface
             ]);
 
             $this->processResponse($modifyAccountResponse);
+
+            $message = 'Package/limits and primary domain updated';
+            $resultData['domain'] = $params->domain;
         }
 
-        // ToDo: Update message to include domain update if performed.
-        return $this->getInfo(AccountUsername::create(['username' => $params->username]))
-            ->setMessage('Package/limits updated');
+        return $this->getInfo(AccountUsername::create($resultData))->setMessage($message);
     }
 
     public function getLoginUrl(GetLoginUrlParams $params): LoginUrl
