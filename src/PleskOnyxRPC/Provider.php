@@ -595,7 +595,16 @@ class Provider extends SharedHosting implements ProviderInterface
 
     public function getUsage(AccountUsername $params): AccountUsage
     {
-        throw $this->errorResult('Operation not supported');
+        if ($params->is_reseller === true) {
+            return $this->getResellerUsage($params);
+        }
+
+        if ($this->loginBelongsToReseller($params->username)) {
+            $this->errorResult('Account is a reseller, cannot get usage as a standard account');
+        }
+
+        $result = $this->getClient()->webspace()->getAll();
+        return AccountUsage::create()->setUsageData([]);
     }
 
     public function changePackage(ChangePackageParams $params): AccountInfo
@@ -1297,5 +1306,18 @@ class Provider extends SharedHosting implements ProviderInterface
         } catch (PleskException | PleskClientException | ProviderError $e) {
             return $this->handleException($e, 'Get plan info', ['plan_guid' => $planGuid]);
         }
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getResellerUsage(AccountUsername $params): AccountUsage
+    {
+        if (!$this->loginBelongsToReseller($params->username)) {
+            $this->errorResult('Account is not a reseller, cannot get reseller usage');
+        }
+
+        $response = $this->getClient()->reseller()->getAll();
+        return AccountUsage::create()->setResellerUsageData([]);
     }
 }
