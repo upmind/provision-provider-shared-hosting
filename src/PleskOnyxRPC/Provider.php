@@ -1384,13 +1384,8 @@ class Provider extends SharedHosting implements ProviderInterface
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    private function getResellerUsage(AccountUsername $params): AccountUsage
+    private function getResellerUsage(): AccountUsage
     {
-        if (!$this->loginBelongsToReseller($params->username)) {
-            $this->errorResult('Account is not a reseller, cannot get reseller usage');
-        }
-
-        $response = $this->getClient()->reseller()->getAll();
-        return AccountUsage::create()->setResellerUsageData([]);
+        return AccountUsage::create()->setMessage('Reseller usage not implemented');
     }
 }
