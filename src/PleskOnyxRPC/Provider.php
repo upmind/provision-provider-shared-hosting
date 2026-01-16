@@ -673,7 +673,6 @@ class Provider extends SharedHosting implements ProviderInterface
                     }
                 }
 
-
                 $usageData = UsageData::create()
                     ->setDiskMb($disk)
                     ->setBandwidthMb($bandwidth)
