@@ -143,7 +143,7 @@ class Provider extends SharedHosting implements ProviderInterface
                     $client->customer()->delete('id', $newCustomer->id);
                 }
 
-                return $this->handleException($e, 'Get IPs');
+                $this->handleException($e, 'Get IPs');
             } catch (Throwable $e) {
                 //cleanup customer
                 if (isset($newCustomer)) {
@@ -287,7 +287,7 @@ class Provider extends SharedHosting implements ProviderInterface
         //     //cleanup reseller
         //     $client->reseller()->delete('id', $customer->id);
 
-        //     return $this->handleException($e, 'Assign ip address');
+        //     $this->handleException($e, 'Assign ip address');
         // } catch (Throwable $e) {
         //     //cleanup reseller
         //     $client->reseller()->delete('id', $customer->id);
@@ -383,7 +383,7 @@ class Provider extends SharedHosting implements ProviderInterface
             try {
                 $this->getPlan($plan, 'service'); //check service plan exists
             } catch (PleskException | PleskClientException | ProviderError $e) {
-                return $this->handleException($e, 'Get plan info');
+                $this->handleException($e, 'Get plan info');
             }
         }
 
@@ -971,7 +971,7 @@ class Provider extends SharedHosting implements ProviderInterface
             return $this->getInfo(AccountUsername::create(['username' => $username]))
             ->setMessage('Reseller unsuspended');
         } catch (PleskException | PleskClientException | ProviderError $e) {
-            return $this->handleException($e, 'Reseller unsuspension');
+            $this->handleException($e, 'Reseller unsuspension');
         }
     }
 
@@ -1032,7 +1032,7 @@ class Provider extends SharedHosting implements ProviderInterface
 
             return $this->emptyResult('Password changed');
         } catch (PleskException | PleskClientException | ProviderError $e) {
-            return $this->handleException($e, 'Change password');
+            $this->handleException($e, 'Change password');
         }
     }
 
