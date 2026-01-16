@@ -711,7 +711,95 @@ class Provider extends SharedHosting implements ProviderInterface
             return AccountUsage::create()->setUsageData($usageData);
         }
 
-        return AccountUsage::create()->setMessage('No account usage could be found for the specified account');
+        $webspaceRequest = [
+            'get' => [
+                'filter' => [
+                    'owner-login' => $params->username,
+                ],
+                'dataset' => [
+                    'gen_info' => '',
+                    'stat' => '',
+                    'hosting' => '',
+                    'packages' => '',
+                    'plan-items' => '',
+                    'subscriptions' => '',
+                ],
+            ],
+        ];
+
+        $webspaceInfo = $this->getClient()->webspace()->request($webspaceRequest);
+        $customerId = $webspaceInfo->data->gen_info->getValue('owner-id');
+        $customerInfo = $this->getCustomerInfo($this->getClient(), $customerId);
+        $subscriptions = json_decode(
+            json_encode($webspaceInfo->data->{'subscriptions'}, JSON_THROW_ON_ERROR),
+            true,
+            512,
+            JSON_THROW_ON_ERROR
+        );
+        $servicePlanRequest = [
+            'get' => [
+                'filter' => [
+                    'guid' => $subscriptions['subscription']['plan']['plan-guid'],
+                ],
+            ],
+        ];
+
+        $servicePlanInfo = $this->getClient()->servicePlan()->request($servicePlanRequest);
+        $servicePlanInfo = json_decode(
+            json_encode($servicePlanInfo, JSON_THROW_ON_ERROR),
+            true,
+            512,
+            JSON_THROW_ON_ERROR
+        );
+
+        $disk = null;
+        $bandwidth = null;
+        $inodes = null;
+        $websites = null;
+        $mailboxes = null;
+
+        foreach ($servicePlanInfo['limits']['limit'] as $limit) {
+            switch ($limit['name']) {
+                case 'disk_space':
+                    $disk = UnitsConsumed::create()
+                        ->setUsed((int) $customerInfo->data->stat->getValue('disk_space') / (1024 * 1024))
+                        ->setLimit($limit['value'] === '-1'
+                            ? null
+                            : (int) $limit['value'] / (1024 * 1024));
+                    break;
+                case 'max_traffic':
+                    $bandwidth = UnitsConsumed::create()
+                        ->setUsed((int) $webspaceInfo->data->stat->getValue('traffic') / (1024 * 1024))
+                        ->setLimit($limit['value'] === '-1'
+                            ? null
+                            : (int) $limit['value'] / (1024 * 1024));
+                    break;
+                case 'max_site':
+                    $websites = UnitsConsumed::create()
+                        ->setUsed((int) $webspaceInfo->data->stat->getValue('sites'))
+                        ->setLimit($limit['value'] === '-1'
+                            ? null
+                            : (int) $limit['value']);
+                    break;
+                case 'max_box':
+                    $mailboxes = UnitsConsumed::create()
+                        ->setUsed((int) $webspaceInfo->data->stat->getValue('box'))
+                        ->setLimit($limit['value'] === '-1'
+                            ? null
+                            : (int) $limit['value']
+                        );
+                    break;
+            }
+        }
+
+        $usageData = UsageData::create()
+            ->setDiskMb($disk)
+            ->setBandwidthMb($bandwidth)
+            ->setInodes($inodes)
+            ->setWebsites($websites)
+            ->setMailboxes($mailboxes);
+
+        return AccountUsage::create()->setUsageData($usageData);
     }
 
     /**
