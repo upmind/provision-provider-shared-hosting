@@ -6,6 +6,7 @@ namespace Upmind\ProvisionProviders\SharedHosting\PleskOnyxRPC;
 
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use JsonException;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionProviders\SharedHosting\Category as SharedHosting;
 use Upmind\ProvisionBase\Helper;
@@ -637,20 +638,125 @@ class Provider extends SharedHosting implements ProviderInterface
         }
 
         if ($params->domain) {
-            // find webspace by domain
-            $domainInfo = $this->getDomainInfo($this->getClient(), $params->domain);
-            $subscriptionId = $domainInfo->data->gen_info->getValue('webspace-id');
-            $webspaceInfo = $this->getWebspaceInfo($this->getClient(), $subscriptionId);
+            try {
+                // find webspace by domain
+                $domainInfo = $this->getDomainInfo($this->getClient(), $params->domain);
+                $subscriptionId = $domainInfo->data->gen_info->getValue('webspace-id');
+                $webspaceInfo = $this->getWebspaceInfo($this->getClient(), $subscriptionId);
+                $customerId = $webspaceInfo->data->gen_info->getValue('owner-id');
+                $customerInfo = $this->getCustomerInfo($this->getClient(), $customerId);
+
+                $subscriptionPlan = $webspaceInfo->data->subscriptions->subscription->plan ?? null;
+
+                if ($subscriptionPlan === null) {
+                    $this->errorResult('No account usage could be found for the specified domain', [
+                        'domain' => $params->domain
+                    ]);
+                }
+
+                $disk = null;
+                $bandwidth = null;
+                $inodes = null;
+                $websites = null;
+                $mailboxes = null;
+
+                $planInfo = $this->getPlanInfo($this->getClient(), $subscriptionPlan->getValue('plan-guid'));
+                $planInfoData = json_decode(
+                    json_encode($planInfo, JSON_THROW_ON_ERROR),
+                    true,
+                    512,
+                    JSON_THROW_ON_ERROR
+                );
+
+                foreach ($planInfoData['limits']['limit'] as $limit) {
+                    switch ($limit['name']) {
+                        case 'disk_space':
+                            $disk = UnitsConsumed::create()
+                                ->setUsed((int) $customerInfo->data->stat->getValue('disk_space') / (1024 * 1024))
+                                ->setLimit($limit['value'] === '-1'
+                                    ? null
+                                    : (int) $limit['value'] / (1024 * 1024));
+                            break;
+                        case 'max_traffic':
+                            $bandwidth = UnitsConsumed::create()
+                                ->setUsed((int) $webspaceInfo->data->stat->getValue('traffic') / (1024 * 1024))
+                                ->setLimit($limit['value'] === '-1'
+                                    ? null
+                                    : (int) $limit['value'] / (1024 * 1024));
+                            break;
+                        case 'max_site':
+                            $websites = UnitsConsumed::create()
+                                ->setUsed((int) $webspaceInfo->data->stat->getValue('sites'))
+                                ->setLimit($limit['value'] === '-1'
+                                    ? null
+                                    : (int) $limit['value']);
+                            break;
+                        case 'max_box':
+                            $mailboxes = UnitsConsumed::create()
+                                ->setUsed((int) $webspaceInfo->data->stat->getValue('box'))
+                                ->setLimit($limit['value'] === '-1'
+                                    ? null
+                                    : (int) $limit['value']
+                                );
+                            break;
+                    }
+                }
+
+
+                $usageData = UsageData::create()
+                    ->setDiskMb($disk)
+                    ->setBandwidthMb($bandwidth)
+                    ->setInodes($inodes)
+                    ->setWebsites($websites)
+                    ->setMailboxes($mailboxes);
+
+                return AccountUsage::create()->setUsageData($usageData);
+            } catch (PleskException | PleskClientException | ProviderError | JsonException $e) {
+                $this->handleException($e, 'Get account usage');
+            }
+        }
+
+        try {
+            $webspaceRequest = [
+                'get' => [
+                    'filter' => [
+                        'owner-login' => $params->username,
+                    ],
+                    'dataset' => [
+                        'gen_info' => '',
+                        'stat' => '',
+                        'hosting' => '',
+                        'packages' => '',
+                        'plan-items' => '',
+                        'subscriptions' => '',
+                    ],
+                ],
+            ];
+
+            $webspaceInfo = $this->getClient()->webspace()->request($webspaceRequest);
             $customerId = $webspaceInfo->data->gen_info->getValue('owner-id');
             $customerInfo = $this->getCustomerInfo($this->getClient(), $customerId);
+            $subscriptions = json_decode(
+                json_encode($webspaceInfo->data->{'subscriptions'}, JSON_THROW_ON_ERROR),
+                true,
+                512,
+                JSON_THROW_ON_ERROR
+            );
+            $servicePlanRequest = [
+                'get' => [
+                    'filter' => [
+                        'guid' => $subscriptions['subscription']['plan']['plan-guid'],
+                    ],
+                ],
+            ];
 
-            $subscriptionPlan = $webspaceInfo->data->subscriptions->subscription->plan ?? null;
-
-            if ($subscriptionPlan === null) {
-                $this->errorResult('No account usage could be found for the specified domain', [
-                    'domain' => $params->domain
-                ]);
-            }
+            $servicePlanInfo = $this->getClient()->servicePlan()->request($servicePlanRequest);
+            $servicePlanInfo = json_decode(
+                json_encode($servicePlanInfo, JSON_THROW_ON_ERROR),
+                true,
+                512,
+                JSON_THROW_ON_ERROR
+            );
 
             $disk = null;
             $bandwidth = null;
@@ -658,15 +764,7 @@ class Provider extends SharedHosting implements ProviderInterface
             $websites = null;
             $mailboxes = null;
 
-            $planInfo = $this->getPlanInfo($this->getClient(), $subscriptionPlan->getValue('plan-guid'));
-            $planInfoData = json_decode(
-                json_encode($planInfo, JSON_THROW_ON_ERROR),
-                true,
-                512,
-                JSON_THROW_ON_ERROR
-            );
-
-            foreach ($planInfoData['limits']['limit'] as $limit) {
+            foreach ($servicePlanInfo['limits']['limit'] as $limit) {
                 switch ($limit['name']) {
                     case 'disk_space':
                         $disk = UnitsConsumed::create()
@@ -700,7 +798,6 @@ class Provider extends SharedHosting implements ProviderInterface
                 }
             }
 
-
             $usageData = UsageData::create()
                 ->setDiskMb($disk)
                 ->setBandwidthMb($bandwidth)
@@ -709,97 +806,9 @@ class Provider extends SharedHosting implements ProviderInterface
                 ->setMailboxes($mailboxes);
 
             return AccountUsage::create()->setUsageData($usageData);
+        } catch (PleskException | PleskClientException | ProviderError | JsonException $e) {
+            $this->handleException($e, 'Get account usage');
         }
-
-        $webspaceRequest = [
-            'get' => [
-                'filter' => [
-                    'owner-login' => $params->username,
-                ],
-                'dataset' => [
-                    'gen_info' => '',
-                    'stat' => '',
-                    'hosting' => '',
-                    'packages' => '',
-                    'plan-items' => '',
-                    'subscriptions' => '',
-                ],
-            ],
-        ];
-
-        $webspaceInfo = $this->getClient()->webspace()->request($webspaceRequest);
-        $customerId = $webspaceInfo->data->gen_info->getValue('owner-id');
-        $customerInfo = $this->getCustomerInfo($this->getClient(), $customerId);
-        $subscriptions = json_decode(
-            json_encode($webspaceInfo->data->{'subscriptions'}, JSON_THROW_ON_ERROR),
-            true,
-            512,
-            JSON_THROW_ON_ERROR
-        );
-        $servicePlanRequest = [
-            'get' => [
-                'filter' => [
-                    'guid' => $subscriptions['subscription']['plan']['plan-guid'],
-                ],
-            ],
-        ];
-
-        $servicePlanInfo = $this->getClient()->servicePlan()->request($servicePlanRequest);
-        $servicePlanInfo = json_decode(
-            json_encode($servicePlanInfo, JSON_THROW_ON_ERROR),
-            true,
-            512,
-            JSON_THROW_ON_ERROR
-        );
-
-        $disk = null;
-        $bandwidth = null;
-        $inodes = null;
-        $websites = null;
-        $mailboxes = null;
-
-        foreach ($servicePlanInfo['limits']['limit'] as $limit) {
-            switch ($limit['name']) {
-                case 'disk_space':
-                    $disk = UnitsConsumed::create()
-                        ->setUsed((int) $customerInfo->data->stat->getValue('disk_space') / (1024 * 1024))
-                        ->setLimit($limit['value'] === '-1'
-                            ? null
-                            : (int) $limit['value'] / (1024 * 1024));
-                    break;
-                case 'max_traffic':
-                    $bandwidth = UnitsConsumed::create()
-                        ->setUsed((int) $webspaceInfo->data->stat->getValue('traffic') / (1024 * 1024))
-                        ->setLimit($limit['value'] === '-1'
-                            ? null
-                            : (int) $limit['value'] / (1024 * 1024));
-                    break;
-                case 'max_site':
-                    $websites = UnitsConsumed::create()
-                        ->setUsed((int) $webspaceInfo->data->stat->getValue('sites'))
-                        ->setLimit($limit['value'] === '-1'
-                            ? null
-                            : (int) $limit['value']);
-                    break;
-                case 'max_box':
-                    $mailboxes = UnitsConsumed::create()
-                        ->setUsed((int) $webspaceInfo->data->stat->getValue('box'))
-                        ->setLimit($limit['value'] === '-1'
-                            ? null
-                            : (int) $limit['value']
-                        );
-                    break;
-            }
-        }
-
-        $usageData = UsageData::create()
-            ->setDiskMb($disk)
-            ->setBandwidthMb($bandwidth)
-            ->setInodes($inodes)
-            ->setWebsites($websites)
-            ->setMailboxes($mailboxes);
-
-        return AccountUsage::create()->setUsageData($usageData);
     }
 
     /**
@@ -1545,9 +1554,6 @@ class Provider extends SharedHosting implements ProviderInterface
         }
     }
 
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
     private function getResellerUsage(): AccountUsage
     {
         return AccountUsage::create()->setMessage('Reseller usage not implemented');
