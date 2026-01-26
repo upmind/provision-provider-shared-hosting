@@ -104,7 +104,8 @@ class Provider extends SharedHosting implements ProviderInterface
             'suspendacct',
             'unsuspendacct',
             'passwd',
-            'removeacct'
+            'removeacct',
+            'modifyacct'
         ];
 
         $missingFunctions = collect($requiredFunctions)->diff($availableFunctions);
@@ -398,10 +399,47 @@ class Provider extends SharedHosting implements ProviderInterface
 
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function changePrimaryDomain(ChangePrimaryDomainParams $params): AccountInfo
     {
-        $this->errorResult('Operation not supported');
+        try {
+            $response = $this->makeApiCall('POST', 'modifyacct', [
+                'user' => $params->username,
+                'domain' => mb_strtolower($params->new_domain),
+            ]);
+
+            $this->processResponse($response);
+        } catch (Throwable $t) {
+            if (!$this->exceptionWasTimeout($t)) {
+                throw $t;
+            }
+
+            try {
+                // just in case WHM is running any weird post-change-primary-domain scripts,
+                // let's see if we can return success.
+                $info = $this->getInfo(AccountUsername::create(['username' => $params->username]));
+
+                // If primary domain has been updated, return success
+                if ($info->domain === $params->new_domain) {
+                    return $info->setMessage('Primary domain updated')
+                        ->setDebug([
+                            'provider_exception' => ProviderResult::formatException(
+                                $this->getFirstException($t)
+                            ),
+                        ]);
+                }
+
+                // Let it fall through to re-throw the original exception
+            } catch (Throwable $getInfoException) {
+                // do nothing...
+            }
+
+            throw $t;
+        }
+
+        return $this->getInfo(AccountUsername::create(['username' => $params->username]))
+            ->setMessage('Primary domain updated');
     }
 
     /**
