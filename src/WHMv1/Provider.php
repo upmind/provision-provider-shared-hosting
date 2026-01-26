@@ -402,7 +402,6 @@ class Provider extends SharedHosting implements ProviderInterface
             $this->processResponse($modifyAccountResponse);
         }
 
-        // ToDo: Update message to include domain update if performed.
         return $this->getInfo(AccountUsername::create(['username' => $params->username]))
             ->setMessage('Package/limits updated');
     }
