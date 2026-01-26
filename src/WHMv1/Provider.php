@@ -356,18 +356,7 @@ class Provider extends SharedHosting implements ProviderInterface
             'user' => $params->username,
             'pkg' => $this->determinePackageName($params->package_name),
         ]);
-
         $this->processResponse($response);
-
-        // After updating package, update the primary domain if it was provided.
-        if ($params->domain) {
-            $modifyAccountResponse = $this->makeApiCall('POST', 'modifyacct', [
-                'user' => $params->username,
-                'domain' => $params->domain,
-            ]);
-
-            $this->processResponse($modifyAccountResponse);
-        }
 
         return $this->getInfo(AccountUsername::create(['username' => $params->username]))
             ->setMessage('Package/limits updated');
