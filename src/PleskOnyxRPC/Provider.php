@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionProviders\SharedHosting\Category as SharedHosting;
 use Upmind\ProvisionBase\Helper;
+use Upmind\ProvisionProviders\SharedHosting\Data\ChangePrimaryDomainParams;
 use Upmind\ProvisionProviders\SharedHosting\PleskOnyxRPC\Api\Client;
 use PleskX\Api\Exception as PleskException;
 use PleskX\Api\Client\Exception as PleskClientException;
@@ -676,6 +677,14 @@ class Provider extends SharedHosting implements ProviderInterface
         } catch (PleskException | PleskClientException | ProviderError $e) {
             $this->handleException($e, "Change customer package");
         }
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function changePrimaryDomain(ChangePrimaryDomainParams $params): AccountInfo
+    {
+        $this->errorResult('Operation not supported');
     }
 
     /**
