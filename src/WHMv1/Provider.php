@@ -19,6 +19,7 @@ use Upmind\ProvisionProviders\SharedHosting\Category as SharedHosting;
 use Upmind\ProvisionBase\Helper;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
+use Upmind\ProvisionProviders\SharedHosting\Data\ChangePrimaryDomainParams;
 use Upmind\ProvisionProviders\SharedHosting\WHMv1\Api\Request;
 use Upmind\ProvisionProviders\SharedHosting\WHMv1\Api\Response;
 use Upmind\ProvisionBase\Result\ProviderResult;
@@ -362,6 +363,18 @@ class Provider extends SharedHosting implements ProviderInterface
             ->setMessage('Package/limits updated');
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function changePrimaryDomain(ChangePrimaryDomainParams $params): AccountInfo
+    {
+        $this->errorResult('Operation not supported');
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function getLoginUrl(GetLoginUrlParams $params): LoginUrl
     {
         $this->assertNotRoot($params->username);
