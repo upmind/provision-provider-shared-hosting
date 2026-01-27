@@ -83,17 +83,6 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    protected function _getInfo(string $userId, ?string $serviceId, ?string $domain, string $message): AccountInfo
-    {
-        $info = $this->api()->getAccountData($userId, $serviceId, $domain);
-
-        return AccountInfo::create($info)->setMessage($message);
-    }
-
-    /**
      * @inheritDoc
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
@@ -348,6 +337,17 @@ class Provider extends Category implements ProviderInterface
     public function revokeReseller(AccountUsername $params): ResellerPrivileges
     {
         $this->errorResult('Operation not supported');
+    }
+
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    protected function _getInfo(string $userId, ?string $serviceId, ?string $domain, string $message): AccountInfo
+    {
+        $info = $this->api()->getAccountData($userId, $serviceId, $domain);
+
+        return AccountInfo::create($info)->setMessage($message);
     }
 
     /**
