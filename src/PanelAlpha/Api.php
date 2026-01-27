@@ -45,7 +45,7 @@ class Api
             }
         }
 
-        $response = $this->client->request($method, "api/{$command}", $requestParams);
+        $response = $this->client->request($method, "api/admin/{$command}", $requestParams);
 
         $result = $response->getBody()->__toString();
 
@@ -77,7 +77,7 @@ class Api
             'status' => 'active', // Set initial status to active
         ];
 
-        $result = $this->makeRequest("admin/users/{$userId}/services", $query, 'POST');
+        $result = $this->makeRequest("users/{$userId}/services", $query, 'POST');
 
         if (empty($result) || !isset($result['id'])) {
             throw ProvisionFunctionError::create('Failed to create service')
@@ -91,46 +91,21 @@ class Api
     }
 
     /**
-     * Create a new domain and return the domain ID.
-     *
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function createDomain(string $serviceId, string $domain): string
-    {
-        $query = [
-            'domain' => $domain,
-        ];
-
-        $result = $this->makeRequest("services/{$serviceId}/domains", $query, 'POST');
-
-        if (!isset($result['id'])) {
-            throw ProvisionFunctionError::create('Failed to create domain for service')
-                ->withData([
-                    'service_id' => $serviceId,
-                    'domain' => $domain,
-                ]);
-        }
-
-        return (string) $result['id'];
-    }
-
-    /**
      * Create a new instance for the user and return the instance ID.
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function createInstance(string $userId, $serviceId, string $domainId, string $name): string
+    public function createInstance(string $userId, $serviceId, string $domain, string $name): string
     {
         $query = [
             'user_id' => $userId,
             'service_id' => $serviceId,
             'name' => $name,
-            'domain_id' => $domainId,
+            'domain' => $domain,
         ];
 
-        $result = $this->makeRequest('instances/install', $query, 'POST');
+        $result = $this->makeRequest('instances', $query, 'POST');
 
         if (empty($result) || !isset($result['id'])) {
             throw ProvisionFunctionError::create('Failed to create instance')
@@ -138,7 +113,7 @@ class Api
                     'user_id' => $userId,
                     'service_id' => $serviceId,
                     'name' => $name,
-                    'domain_id' => $domainId,
+                    'domain' => $domain,
                 ]);
         }
 
@@ -170,7 +145,7 @@ class Api
             $query['last_name'] = mb_substr($nameArray[1], 0, 255);
         }
 
-        $result = $this->makeRequest('admin/users', $query, 'POST');
+        $result = $this->makeRequest('users', $query, 'POST');
 
         if (empty($result) || !isset($result['id'])) {
             throw ProvisionFunctionError::create('Failed to create user')
@@ -239,7 +214,7 @@ class Api
      */
     public function getUserConfig(string $userId): array
     {
-        return $this->makeRequest("admin/users/{$userId}");
+        return $this->makeRequest("users/{$userId}");
     }
 
     /**
@@ -248,7 +223,7 @@ class Api
      */
     public function getUserServices(string $userId): array
     {
-        return $this->makeRequest("admin/users/{$userId}/services");
+        return $this->makeRequest("users/{$userId}/services");
     }
 
     /**
@@ -257,7 +232,7 @@ class Api
      */
     public function getInstances(string $userId): array
     {
-        return $this->makeRequest("admin/users/{$userId}/all-instances");
+        return $this->makeRequest("users/{$userId}/all-instances");
     }
 
     /**
@@ -285,7 +260,7 @@ class Api
                 ]);
         }
 
-        $this->makeRequest("admin/users/$userId/services/$serviceId/suspend", null, 'PUT');
+        $this->makeRequest("users/$userId/services/$serviceId/suspend", null, 'PUT');
     }
 
     /**
@@ -313,7 +288,7 @@ class Api
                 ]);
         }
 
-        $this->makeRequest("admin/users/$userId/services/$serviceId/unsuspend", null, 'PUT');
+        $this->makeRequest("users/$userId/services/$serviceId/unsuspend", null, 'PUT');
     }
 
     /**
@@ -324,7 +299,7 @@ class Api
      */
     public function findUserIdByEmail(string $email): string
     {
-        $result = $this->makeRequest('admin/users/email', ['email' => $email]);
+        $result = $this->makeRequest('users/email', ['email' => $email]);
 
         if (empty($result) || !isset($result['id'])) {
             throw ProvisionFunctionError::create('User does not exist')
@@ -361,12 +336,12 @@ class Api
 
             $serviceId = (string) $service['id'];
 
-            $this->makeRequest("admin/services/{$serviceId}", null, 'DELETE');
+            $this->makeRequest("services/{$serviceId}", null, 'DELETE');
         }
 
         // If no other services linked to the user, delete user.
         if (empty($this->getUserServices($userId))) {
-            $this->makeRequest("admin/users/$userId", null, 'DELETE');
+            $this->makeRequest("users/$userId", null, 'DELETE');
         }
     }
 
@@ -407,7 +382,7 @@ class Api
             'plan_id' => $planId,
         ];
 
-        $this->makeRequest("admin/users/{$userId}/services/{$serviceId}/change-plan", $query, "PUT");
+        $this->makeRequest("users/{$userId}/services/{$serviceId}/change-plan", $query, "PUT");
     }
 
     /**
@@ -456,7 +431,7 @@ class Api
             $userId = $this->findUserIdByEmail($userId);
         }
 
-        $sso = $this->makeRequest("admin/users/{$userId}/sso-token", null, 'POST');
+        $sso = $this->makeRequest("users/{$userId}/sso-token", null, 'POST');
 
         if (empty($sso) || !isset($sso['url'], $sso['token'])) {
             throw ProvisionFunctionError::create('Failed to get Login URL')
@@ -492,7 +467,7 @@ class Api
             'password' => $password,
         ];
 
-        $this->makeRequest("admin/users/{$userId}", $query, "PUT");
+        $this->makeRequest("users/{$userId}", $query, "PUT");
     }
 
     /**
@@ -501,7 +476,7 @@ class Api
      */
     private function getPlanId(string $plan): string
     {
-        $plans = $this->makeRequest('admin/plans');
+        $plans = $this->makeRequest('plans');
 
         foreach ($plans as $p) {
             if (!isset($p['id'], $p['name'])) {
@@ -586,7 +561,7 @@ class Api
      */
     private function deleteInstance(string $instanceId): void
     {
-        $this->makeRequest("admin/instances/{$instanceId}", null, 'DELETE');
+        $this->makeRequest("instances/{$instanceId}", null, 'DELETE');
     }
 
     /**
