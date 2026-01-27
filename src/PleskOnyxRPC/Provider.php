@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionProviders\SharedHosting\Category as SharedHosting;
 use Upmind\ProvisionBase\Helper;
+use Upmind\ProvisionProviders\SharedHosting\Data\ChangePrimaryDomainParams;
 use Upmind\ProvisionProviders\SharedHosting\PleskOnyxRPC\Api\Client;
 use PleskX\Api\Exception as PleskException;
 use PleskX\Api\Client\Exception as PleskClientException;
@@ -675,6 +676,50 @@ class Provider extends SharedHosting implements ProviderInterface
                 ->setMessage('Package changed');
         } catch (PleskException | PleskClientException | ProviderError $e) {
             $this->handleException($e, "Change customer package");
+        }
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function changePrimaryDomain(ChangePrimaryDomainParams $params): AccountInfo
+    {
+        $username = $params->username;
+
+        if ($this->loginBelongsToReseller($username)) {
+            $this->errorResult('Operation not supported for resellers');
+        }
+
+        $webSpaceRequest = [
+            'set' => [
+                'filter' => [
+                    'owner-login' => $username,
+                ],
+                'values' => [
+                    'gen_setup' => [
+                        'name' => $params->new_domain,
+                    ]
+                ]
+            ],
+        ];
+
+        // Add domain to the filter if provided.
+        if ($params->domain) {
+            $webSpaceRequest['set']['filter']['name'] = $params->domain;
+        }
+
+        try {
+            $this->getClient()->webspace()->request($webSpaceRequest);
+
+            return $this->getInfo(AccountUsername::create([
+                'customer_id' => $params->customer_id,
+                'subscription_id' => $params->subscription_id,
+                'username' => $params->username,
+                'domain' => $params->new_domain,
+                'is_reseller' => $params->is_reseller,
+            ]))->setMessage('Primary domain changed');
+        } catch (Throwable $t) {
+            $this->handleException($t, 'Change Primary Domain');
         }
     }
 

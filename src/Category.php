@@ -8,6 +8,7 @@ use Upmind\ProvisionBase\Provider\BaseCategory;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionProviders\SharedHosting\Data\AccountInfo;
 use Upmind\ProvisionProviders\SharedHosting\Data\AccountUsage;
+use Upmind\ProvisionProviders\SharedHosting\Data\ChangePrimaryDomainParams;
 use Upmind\ProvisionProviders\SharedHosting\Data\CreateParams;
 use Upmind\ProvisionProviders\SharedHosting\Data\EmptyResult;
 use Upmind\ProvisionProviders\SharedHosting\Data\GetLoginUrlParams;
@@ -48,7 +49,7 @@ abstract class Category extends BaseCategory
 
     /**
      * Gets information about a hosting account such as the main domain name,
-     * whether or not it is suspended, the hostname of it's server, nameservers
+     * whether, or not, it is suspended, the hostname of it's server, nameservers
      * etc.
      */
     abstract public function getInfo(AccountUsername $params): AccountInfo;
@@ -74,6 +75,11 @@ abstract class Category extends BaseCategory
      * Update the product/package a hosting account is set to.
      */
     abstract public function changePackage(ChangePackageParams $params): AccountInfo;
+
+    /**
+     * Update the primary domain of the hosting account.
+     */
+    abstract public function changePrimaryDomain(ChangePrimaryDomainParams $params): AccountInfo;
 
     /**
      * Suspends services for a hosting account.
