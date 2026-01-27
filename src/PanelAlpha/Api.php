@@ -91,21 +91,46 @@ class Api
     }
 
     /**
+     * Create a new domain and return the domain ID.
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function createDomain(string $serviceId, string $domain): string
+    {
+        $query = [
+            'domain' => $domain,
+        ];
+
+        $result = $this->makeRequest("services/{$serviceId}/domains", $query, 'POST');
+
+        if (empty($result) || !isset($result['id'])) {
+            throw ProvisionFunctionError::create('Failed to create domain for service')
+                ->withData([
+                    'service_id' => $serviceId,
+                    'domain' => $domain,
+                ]);
+        }
+
+        return (string) $result['id'];
+    }
+
+    /**
      * Create a new instance for the user and return the instance ID.
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function createInstance(string $userId, $serviceId, string $domain, string $name): string
+    public function createInstance(string $userId, $serviceId, string $domainId, string $name): string
     {
         $query = [
             'user_id' => $userId,
             'service_id' => $serviceId,
             'name' => $name,
-            'domain' => $domain,
+            'domain_id' => $domainId,
         ];
 
-        $result = $this->makeRequest('instances', $query, 'POST');
+        $result = $this->makeRequest('instances/install', $query, 'POST');
 
         if (empty($result) || !isset($result['id'])) {
             throw ProvisionFunctionError::create('Failed to create instance')
