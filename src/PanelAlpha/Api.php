@@ -27,11 +27,7 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function makeRequest(
-        string  $command,
-        ?array  $body = null,
-        ?string $method = 'GET'
-    ): ?array
+    public function makeRequest(string  $command, ?array  $body = null, ?string $method = 'GET'): ?array
     {
         $requestParams = [];
 
@@ -51,11 +47,11 @@ class Api
 
         $response = $this->client->request($method, "api/admin/{$command}", $requestParams);
 
-        $result = $response->getBody()->getContents();
+        $result = $response->getBody()->__toString();
 
         $response->getBody()->close();
 
-        if ($result === "") {
+        if ($result === '') {
             return null;
         }
 
