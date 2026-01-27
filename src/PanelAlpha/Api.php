@@ -78,6 +78,7 @@ class Api
 
         $query = [
             'plan_id' => $planId,
+            'status' => 'active', // Set initial status to active
         ];
 
         $result = $this->makeRequest("users/{$userId}/services", $query, 'POST');
