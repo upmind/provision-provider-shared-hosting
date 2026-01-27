@@ -71,7 +71,8 @@ class Provider extends Category implements ProviderInterface
 
             // Create instance if domain is provided.
             if ($params->domain) {
-                $this->api()->createInstance($userId, $serviceId, $params->domain, $name);
+                $domainId = $this->api()->createDomain($serviceId, $params->domain);
+                $this->api()->createInstance($userId, $serviceId, $domainId, $name);
 
                 $message = 'Account created with hosting instance for domain: ' . $params->domain;
             }

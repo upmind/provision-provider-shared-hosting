@@ -104,7 +104,7 @@ class Api
 
         $result = $this->makeRequest("services/{$serviceId}/domains", $query, 'POST');
 
-        if (empty($result) || !isset($result['id'])) {
+        if (!isset($result['id'])) {
             throw ProvisionFunctionError::create('Failed to create domain for service')
                 ->withData([
                     'service_id' => $serviceId,
@@ -138,7 +138,7 @@ class Api
                     'user_id' => $userId,
                     'service_id' => $serviceId,
                     'name' => $name,
-                    'domain' => $domain,
+                    'domain_id' => $domainId,
                 ]);
         }
 
