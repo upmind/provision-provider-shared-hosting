@@ -12,7 +12,6 @@ use Psr\Http\Message\ResponseInterface;
 use Throwable;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Helper;
-use Upmind\ProvisionBase\Provider\Contract\LogsDebugData;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionProviders\SharedHosting\Category;
@@ -35,15 +34,15 @@ use Upmind\ProvisionProviders\SharedHosting\CyberPanel\Data\Configuration;
 /**
  * CyberPanel hosting provider.
  */
-class Provider extends Category implements ProviderInterface, LogsDebugData
+class Provider extends Category implements ProviderInterface
 {
     protected Configuration $configuration;
-    protected Client|null $client = null;
+    protected ?Client $client = null;
 
     public function __construct(Configuration $configuration)
     {
         $this->configuration = $configuration;
-        $this->client = $this->createClient();
+        $this->client = $this->getClient();
     }
 
     /**
@@ -67,11 +66,11 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
     {
         // Validate required parameters
         if (!$params->domain) {
-            throw $this->errorResult('Domain name is required');
+            $this->errorResult('Domain name is required');
         }
 
         if (!$params->package_name) {
-            throw $this->errorResult('Package name is required');
+            $this->errorResult('Package name is required');
         }
 
         // Generate username and password if not provided
@@ -80,12 +79,12 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
 
         // Validate domain format
         if (!$this->isValidDomain($params->domain)) {
-            throw $this->errorResult('Invalid domain name format');
+            $this->errorResult('Invalid domain name format');
         }
 
         // Validate username format
         if (!$this->isValidUsername($username)) {
-            throw $this->errorResult('Invalid username format');
+            $this->errorResult('Invalid username format');
         }
 
         // Prepare API request data
@@ -125,7 +124,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
             if (isset($response['LinuxUser'])) {
                 $accountInfo->setUsername($response['LinuxUser']);
             }
-            
+
             if (isset($response['createWebSiteStatus']) && $response['createWebSiteStatus'] == 1) {
                 $accountInfo->setMessage('Website created successfully');
             }
@@ -137,7 +136,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
             throw $e;
         } catch (Throwable $e) {
             // Handle unexpected errors
-            throw $this->errorResult('Failed to create account', [
+            $this->errorResult('Failed to create account', [
                 'error' => $e->getMessage(),
                 'domain' => $params->domain,
                 'username' => $username,
@@ -166,7 +165,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
             // Check if user exists
             if (isset($response['status']) && $response['status'] == 0) {
                 $message = $response['error_message'] ?? 'User not found';
-                throw $this->errorResult('Account not found', [
+                $this->errorResult('Account not found', [
                     'error' => $message,
                 ]);
             }
@@ -200,7 +199,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
             throw $e;
         } catch (Throwable $e) {
             // Handle unexpected errors
-            throw $this->errorResult('Failed to retrieve account information', [
+            $this->errorResult('Failed to retrieve account information', [
                 'error' => $e->getMessage(),
                 'username' => $username,
             ]);
@@ -286,7 +285,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
             throw $e;
         } catch (Throwable $e) {
             // Unexpected errors bubble up with a helpful message
-            throw $this->errorResult('Failed to retrieve usage data', [
+            $this->errorResult('Failed to retrieve usage data', [
                 'error' => $e->getMessage(),
                 'username' => $username,
             ]);
@@ -328,7 +327,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
         } catch (ProvisionFunctionError $e) {
             throw $e;
         } catch (Throwable $e) {
-            throw $this->errorResult('Failed to generate login URL', [
+            $this->errorResult('Failed to generate login URL', [
                 'error' => $e->getMessage(),
                 'username' => $username,
             ]);
@@ -348,7 +347,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
         // Validate password strength (basic: length >= 8, mix of letters and numbers)
         if (!is_string($newPassword) || strlen($newPassword) < 8 ||
             !preg_match('/[A-Za-z]/', $newPassword) || !preg_match('/\d/', $newPassword)) {
-            throw $this->errorResult('Password does not meet minimum strength requirements');
+            $this->errorResult('Password does not meet minimum strength requirements');
         }
 
         if (isset($this->log)) {
@@ -376,7 +375,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
         } catch (ProvisionFunctionError $e) {
             throw $e;
         } catch (Throwable $e) {
-            throw $this->errorResult('Failed to update password', [
+            $this->errorResult('Failed to update password', [
                 'error' => $e->getMessage(),
                 'username' => $username,
             ]);
@@ -396,14 +395,14 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
 
         // Enforce explicit domain for submission-safety
         if (!$domain) {
-            throw $this->errorResult('Domain name is required');
+            $this->errorResult('Domain name is required');
         }
         if (!$this->isValidDomain($domain)) {
-            throw $this->errorResult('Invalid domain name format');
+            $this->errorResult('Invalid domain name format');
         }
 
         if (!$newPackage) {
-            throw $this->errorResult('Package name is required');
+            $this->errorResult('Package name is required');
         }
 
         if (isset($this->log)) {
@@ -438,7 +437,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
         } catch (ProvisionFunctionError $e) {
             throw $e;
         } catch (Throwable $e) {
-            throw $this->errorResult('Failed to update package', [
+            $this->errorResult('Failed to update package', [
                 'error' => $e->getMessage(),
                 'username' => $username,
                 'package' => $newPackage,
@@ -459,7 +458,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
 
         // Require valid domain for submission-safety
         if (!$this->isValidDomain($domain)) {
-            throw $this->errorResult('Domain name is required for this operation');
+            $this->errorResult('Domain name is required for this operation');
         }
 
         // Log intent with sanitized reason
@@ -497,7 +496,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
         } catch (ProvisionFunctionError $e) {
             throw $e;
         } catch (Throwable $e) {
-            throw $this->errorResult('Failed to suspend account', [
+            $this->errorResult('Failed to suspend account', [
                 'error' => $e->getMessage(),
                 'username' => $username,
             ]);
@@ -516,7 +515,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
 
         // Require valid domain for submission-safety
         if (!$this->isValidDomain($domain)) {
-            throw $this->errorResult('Domain name is required for this operation');
+            $this->errorResult('Domain name is required for this operation');
         }
 
         if (isset($this->log)) {
@@ -550,7 +549,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
         } catch (ProvisionFunctionError $e) {
             throw $e;
         } catch (Throwable $e) {
-            throw $this->errorResult('Failed to reactivate account', [
+            $this->errorResult('Failed to reactivate account', [
                 'error' => $e->getMessage(),
                 'username' => $username,
             ]);
@@ -585,7 +584,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
             if (isset($response['error']) && $response['error'] === true) {
                 $message = strtolower($response['message'] ?? '');
                 if (strpos($message, 'not found') !== false || strpos($message, 'does not exist') !== false) {
-                    throw $this->errorResult('Account not found');
+                    $this->errorResult('Account not found');
                 }
             }
 
@@ -596,7 +595,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
         } catch (ProvisionFunctionError $e) {
             throw $e;
         } catch (Throwable $e) {
-            throw $this->errorResult('Failed to delete account', [
+            $this->errorResult('Failed to delete account', [
                 'error' => $e->getMessage(),
                 'username' => $username,
             ]);
@@ -617,7 +616,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
                 'username' => $params->username ?? null,
             ]);
         }
-        throw $this->errorResult('Reseller features not supported');
+        $this->errorResult('Reseller features not supported');
     }
 
     /**
@@ -634,28 +633,20 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
                 'username' => $params->username,
             ]);
         }
-        throw $this->errorResult('Reseller features not supported');
+        $this->errorResult('Reseller features not supported');
     }
 
     /**
      * Create a Guzzle HTTP client instance.
      */
-    protected function createClient(): Client
+    protected function getClient(): Client
     {
-        // Create a basic handler stack without logging if logger is not available
-        $stack = \GuzzleHttp\HandlerStack::create();
-        
-        // Only add logging if logger is available
-        if (method_exists($this, 'getLogger') && isset($this->log)) {
-            try {
-                $stack = $this->getGuzzleHandlerStack();
-            } catch (\Exception $e) {
-                // If logger fails, continue with basic stack
-            }
+        if ($this->client !== null) {
+            return $this->client;
         }
-        
-        return new Client([
-            'handler' => $stack,
+
+        $this->client = new Client([
+            'handler' => $this->getGuzzleHandlerStack(),
             'base_uri' => $this->configuration->hostname . '/',
             'verify' => $this->configuration->ssl_verify ?? true,
             'timeout' => 30,
@@ -668,6 +659,8 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
                 'Accept' => 'application/json',
             ],
         ]);
+
+        return $this->client;
     }
 
 
@@ -682,10 +675,10 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
     protected function apiRequest(string $endpoint, array $data = []): array
     {
         $url = "api/{$endpoint}";
-        
+
         // Sanitize data for logging (remove sensitive information)
         $logData = $this->sanitizeDataForLogging($data);
-        
+
         if (isset($this->log)) {
             $this->log->debug('CyberPanel API Request', [
                 'endpoint' => $endpoint,
@@ -700,7 +693,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
             ]);
 
             $responseData = $this->parseResponse($response);
-            
+
             if (isset($this->log)) {
                 $this->log->debug('CyberPanel API Response', [
                     'endpoint' => $endpoint,
@@ -718,7 +711,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
                     'error' => $e->getMessage(),
                 ]);
             }
-            
+
             $this->errorResult('Unable to connect to CyberPanel API', [
                 'endpoint' => $endpoint,
                 'error' => $e->getMessage(),
@@ -728,7 +721,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
             $response = $e->getResponse();
             $statusCode = $response ? $response->getStatusCode() : 0;
             $responseBody = $response ? $response->getBody()->getContents() : '';
-            
+
             if (isset($this->log)) {
                 $this->log->error('CyberPanel API Request Error', [
                     'endpoint' => $endpoint,
@@ -736,7 +729,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
                     'response_body' => $responseBody,
                 ]);
             }
-            
+
             $this->errorResult('CyberPanel API request failed', [
                 'endpoint' => $endpoint,
                 'status_code' => $statusCode,
@@ -750,7 +743,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
                     'error' => $e->getMessage(),
                 ]);
             }
-            
+
             $this->errorResult('CyberPanel API transfer failed', [
                 'endpoint' => $endpoint,
                 'error' => $e->getMessage(),
@@ -764,7 +757,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
                     'trace' => $e->getTraceAsString(),
                 ]);
             }
-            
+
             $this->errorResult('Unexpected error occurred', [
                 'endpoint' => $endpoint,
                 'error' => $e->getMessage(),
@@ -781,7 +774,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
         $data = json_decode($body, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw $this->errorResult('Invalid response format', [
+            $this->errorResult('Invalid response format', [
                 'response_body' => $body,
                 'json_error' => json_last_error_msg(),
             ]);
@@ -790,26 +783,26 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
         // Check for CyberPanel API errors
         if (isset($data['error']) && $data['error'] === true) {
             $message = $data['message'] ?? 'Unknown API error';
-            
+
             // Handle specific error cases
             if (strpos(strtolower($message), 'domain') !== false && strpos(strtolower($message), 'exist') !== false) {
-                throw $this->errorResult('Domain already exists');
+                $this->errorResult('Domain already exists');
             }
-            
+
             if (strpos(strtolower($message), 'package') !== false && strpos(strtolower($message), 'invalid') !== false) {
-                throw $this->errorResult('Invalid hosting package');
+                $this->errorResult('Invalid hosting package');
             }
-            
+
             if (strpos(strtolower($message), 'quota') !== false || strpos(strtolower($message), 'limit') !== false) {
-                throw $this->errorResult('Server quota exceeded');
+                $this->errorResult('Server quota exceeded');
             }
-            
+
             if (strpos(strtolower($message), 'auth') !== false || strpos(strtolower($message), 'login') !== false) {
-                throw $this->errorResult('Authentication failed');
+                $this->errorResult('Authentication failed');
             }
-            
+
             // Generic API error
-            throw $this->errorResult('Failed to create account', [
+            $this->errorResult('Failed to create account', [
                 'error' => $message,
             ]);
         }
@@ -837,13 +830,13 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
             // Other sensitive fields
             'privateKey', 'publicKey', 'certificate', 'sslKey', 'sslCert'
         ];
-        
+
         // Recursively sanitize nested arrays
         $sanitized = $this->recursiveSanitize($data, $sensitiveKeys);
-        
+
         return $sanitized;
     }
-    
+
     /**
      * Recursively sanitize nested arrays for sensitive data.
      */
@@ -858,7 +851,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
                     break;
                 }
             }
-            
+
             if ($isSensitive) {
                 // Redact sensitive values
                 if (is_string($value) && !empty($value)) {
@@ -873,7 +866,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
                 $data[$key] = $this->recursiveSanitize($value, $sensitiveKeys);
             }
         }
-        
+
         return $data;
     }
 
@@ -884,19 +877,19 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
     {
         // Remove www. prefix if present
         $domain = preg_replace('/^www\./', '', strtolower($domain));
-        
+
         // Remove domain extension
         $username = preg_replace('/\.[a-z]+$/', '', $domain);
-        
+
         // Remove invalid characters and limit length
         $username = preg_replace('/[^a-z0-9]/', '', $username);
         $username = substr($username, 0, 8);
-        
+
         // Ensure minimum length
         if (strlen($username) < 3) {
             $username = 'user' . substr(md5($domain), 0, 4);
         }
-        
+
         return $username;
     }
 
@@ -909,7 +902,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
         if (empty($domain) || strlen($domain) > 253) {
             return false;
         }
-        
+
         // More lenient domain validation for CyberPanel
         // Allow domains like kasendraboutique.com, erikaretail.com, etc.
         return preg_match('/^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.([a-zA-Z]{2,})$/', $domain) === 1;
@@ -924,7 +917,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
         if (strlen($username) < 3 || strlen($username) > 8) {
             return false;
         }
-        
+
         // Only alphanumeric characters allowed
         return preg_match('/^[a-z0-9]+$/', $username) === 1;
     }
@@ -942,7 +935,7 @@ class Provider extends Category implements ProviderInterface, LogsDebugData
             'jaybe' => 'upscaletest1.com',
             'admin' => 'admin.com',
         ];
-        
+
         // Return mapped domain if available, otherwise use fallback
         return $userDomainMap[$username] ?? $username . '.com';
     }
