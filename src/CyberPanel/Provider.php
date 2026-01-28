@@ -301,13 +301,6 @@ class Provider extends Category implements ProviderInterface
     {
         $username = $params->username;
 
-        if (isset($this->log)) {
-            $this->log->info('Generating login URL', [
-                'username' => $username,
-                'user_ip' => $params->user_ip,
-            ]);
-        }
-
         try {
             // CyberPanel typically does not provide a user SSO token via public API.
             // Provide manual URL fallback.
@@ -348,13 +341,6 @@ class Provider extends Category implements ProviderInterface
         if (!is_string($newPassword) || strlen($newPassword) < 8 ||
             !preg_match('/[A-Za-z]/', $newPassword) || !preg_match('/\d/', $newPassword)) {
             $this->errorResult('Password does not meet minimum strength requirements');
-        }
-
-        if (isset($this->log)) {
-            $this->log->info('Changing password', [
-                'username' => $username,
-                'password_len' => strlen($newPassword), // never log the password
-            ]);
         }
 
         try {
@@ -403,13 +389,6 @@ class Provider extends Category implements ProviderInterface
 
         if (!$newPackage) {
             $this->errorResult('Package name is required');
-        }
-
-        if (isset($this->log)) {
-            $this->log->info('Changing package', [
-                'username' => $username,
-                'package' => $newPackage,
-            ]);
         }
 
         try {
@@ -461,14 +440,6 @@ class Provider extends Category implements ProviderInterface
             $this->errorResult('Domain name is required for this operation');
         }
 
-        // Log intent with sanitized reason
-        if (isset($this->log)) {
-            $this->log->info('Suspending account', [
-                'username' => $username,
-                'reason_present' => (bool) $reason,
-            ]);
-        }
-
         try {
             // Use correct API endpoint from blueprint: submitWebsiteStatus
             $payload = [
@@ -518,12 +489,6 @@ class Provider extends Category implements ProviderInterface
             $this->errorResult('Domain name is required for this operation');
         }
 
-        if (isset($this->log)) {
-            $this->log->info('Reactivating account', [
-                'username' => $username,
-            ]);
-        }
-
         try {
             // Use correct API endpoint from blueprint: submitWebsiteStatus
             $response = $this->apiRequest('submitWebsiteStatus', [
@@ -565,12 +530,6 @@ class Provider extends Category implements ProviderInterface
     {
         $username = $params->username;
 
-        if (isset($this->log)) {
-            $this->log->warning('Deleting account', [
-                'username' => $username,
-            ]);
-        }
-
         try {
             // Use correct API endpoint from blueprint: deleteWebsite
             $response = $this->apiRequest('deleteWebsite', [
@@ -611,11 +570,6 @@ class Provider extends Category implements ProviderInterface
     {
         // CyberPanel does not expose reseller privilege management via public API.
         // If this becomes available, implement here.
-        if (isset($this->log)) {
-            $this->log->info('Attempted to grant reseller privileges on unsupported platform', [
-                'username' => $params->username ?? null,
-            ]);
-        }
         $this->errorResult('Reseller features not supported');
     }
 
@@ -628,11 +582,6 @@ class Provider extends Category implements ProviderInterface
     {
         // CyberPanel does not expose reseller privilege management via public API.
         // If this becomes available, implement here.
-        if (isset($this->log)) {
-            $this->log->info('Attempted to revoke reseller privileges on unsupported platform', [
-                'username' => $params->username,
-            ]);
-        }
         $this->errorResult('Reseller features not supported');
     }
 
@@ -679,14 +628,6 @@ class Provider extends Category implements ProviderInterface
         // Sanitize data for logging (remove sensitive information)
         $logData = $this->sanitizeDataForLogging($data);
 
-        if (isset($this->log)) {
-            $this->log->debug('CyberPanel API Request', [
-                'endpoint' => $endpoint,
-                'url' => $url,
-                'data' => $logData,
-            ]);
-        }
-
         try {
             $response = $this->client->post($url, [
                 'json' => $data,
@@ -694,24 +635,9 @@ class Provider extends Category implements ProviderInterface
 
             $responseData = $this->parseResponse($response);
 
-            if (isset($this->log)) {
-                $this->log->debug('CyberPanel API Response', [
-                    'endpoint' => $endpoint,
-                    'status_code' => $response->getStatusCode(),
-                    'response' => $responseData,
-                ]);
-            }
-
             return $responseData;
 
         } catch (ConnectException $e) {
-            if (isset($this->log)) {
-                $this->log->error('CyberPanel API Connection Error', [
-                    'endpoint' => $endpoint,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-
             $this->errorResult('Unable to connect to CyberPanel API', [
                 'endpoint' => $endpoint,
                 'error' => $e->getMessage(),
@@ -722,14 +648,6 @@ class Provider extends Category implements ProviderInterface
             $statusCode = $response ? $response->getStatusCode() : 0;
             $responseBody = $response ? $response->getBody()->getContents() : '';
 
-            if (isset($this->log)) {
-                $this->log->error('CyberPanel API Request Error', [
-                    'endpoint' => $endpoint,
-                    'status_code' => $statusCode,
-                    'response_body' => $responseBody,
-                ]);
-            }
-
             $this->errorResult('CyberPanel API request failed', [
                 'endpoint' => $endpoint,
                 'status_code' => $statusCode,
@@ -737,27 +655,12 @@ class Provider extends Category implements ProviderInterface
             ]);
 
         } catch (TransferException $e) {
-            if (isset($this->log)) {
-                $this->log->error('CyberPanel API Transfer Error', [
-                    'endpoint' => $endpoint,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-
             $this->errorResult('CyberPanel API transfer failed', [
                 'endpoint' => $endpoint,
                 'error' => $e->getMessage(),
             ]);
 
         } catch (Throwable $e) {
-            if (isset($this->log)) {
-                $this->log->error('CyberPanel API Unexpected Error', [
-                    'endpoint' => $endpoint,
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-            }
-
             $this->errorResult('Unexpected error occurred', [
                 'endpoint' => $endpoint,
                 'error' => $e->getMessage(),
@@ -832,9 +735,7 @@ class Provider extends Category implements ProviderInterface
         ];
 
         // Recursively sanitize nested arrays
-        $sanitized = $this->recursiveSanitize($data, $sensitiveKeys);
-
-        return $sanitized;
+        return $this->recursiveSanitize($data, $sensitiveKeys);
     }
 
     /**
