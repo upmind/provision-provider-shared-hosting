@@ -47,7 +47,7 @@ class Provider extends Category implements ProviderInterface
         return AboutData::create()
             ->setName('PanelAlpha')
             ->setDescription('Create and manage PanelAlpha accounts and resellers using the PanelAlpha API')
-            ->setLogoUrl('https://api.upmind.io/images/logos/provision/panel-alpha-logo.png');
+            ->setLogoUrl('https://api.upmind.io/images/logos/provision/panel-alpha-logo.svg');
     }
 
     /**
