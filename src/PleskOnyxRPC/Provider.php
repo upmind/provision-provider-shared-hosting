@@ -97,11 +97,12 @@ class Provider extends SharedHosting implements ProviderInterface
             return $this->createReseller($params);
         }
 
-        $login = $params->username ?? $this->generateUsername($params->domain);
+        $username = $params->username ?? $this->generateUsername($params->domain);
+        $ftpLogin = $username;
         $ownerLogin = $params->owner_username;
         $email = $params->email;
         $passwd = $params->password ?: Helper::generatePassword();
-        $pname = $params->customer_name ?? $login;
+        $pname = $params->customer_name ?? $username;
         $domain = $params->domain;
         $ip_address = $params->custom_ip;
 
@@ -109,12 +110,14 @@ class Provider extends SharedHosting implements ProviderInterface
 
         if ($params->customer_id) {
             $customerId = $params->customer_id;
+            $customerInfo = $this->getCustomerInfo($client, $customerId);
+            $username = $customerInfo->data->gen_info->getValue('login');
         } else {
             try {
                 //create customer
                 $customerParams = [
                     'pname' => $pname,
-                    'login' => $login,
+                    'login' => $username,
                     'passwd' => $passwd,
                     'email' => $email,
                 ];
@@ -180,7 +183,7 @@ class Provider extends SharedHosting implements ProviderInterface
                 'htype' => 'vrt_hst'
             ];
             $hostingParams = [
-                'ftp_login' => $login,
+                'ftp_login' => $ftpLogin,
                 'ftp_password' => $passwd
             ];
             $webspace = $client->webspace()->create($webspaceParams, $hostingParams, $plan->name);
@@ -200,7 +203,7 @@ class Provider extends SharedHosting implements ProviderInterface
             throw $e;
         }
 
-        return $this->getInfo(new AccountUsername(['username' => $login]))
+        return $this->getInfo(new AccountUsername(['customer_id' => $customerId, 'username' => $username, 'domain' => $domain]))
             ->setMessage('Subscription created')
             ->setDebug(['customer' => $newCustomer ?? $customerId, 'webspace' => $webspace]);
     }
