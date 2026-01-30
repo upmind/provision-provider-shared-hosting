@@ -25,6 +25,9 @@
         "ext-json": "*",
         "ext-soap": "*"
     },
+    "config": {
+        "sort-packages": true
+    },
     "extra": {
         "laravel": {
             "providers": [

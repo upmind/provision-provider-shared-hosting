@@ -23,6 +23,7 @@ use Upmind\ProvisionProviders\SharedHosting\Data\AccountUsage;
 use Upmind\ProvisionProviders\SharedHosting\Data\AccountUsername;
 use Upmind\ProvisionProviders\SharedHosting\Data\ChangePackageParams;
 use Upmind\ProvisionProviders\SharedHosting\Data\ChangePasswordParams;
+use Upmind\ProvisionProviders\SharedHosting\Data\ChangePrimaryDomainParams;
 use Upmind\ProvisionProviders\SharedHosting\Data\CreateParams;
 use Upmind\ProvisionProviders\SharedHosting\Data\EmptyResult;
 use Upmind\ProvisionProviders\SharedHosting\Data\GetLoginUrlParams;
@@ -202,6 +203,18 @@ class Provider extends SharedHosting implements ProviderInterface
         return $this->getAccountInfoData($packageInfo->username);
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function changePrimaryDomain(ChangePrimaryDomainParams $params): AccountInfo
+    {
+        $this->errorResult('Operation not supported');
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function suspend(SuspendParams $params): AccountInfo
     {
         $infoResult = $this->getAccountInfoData($params->username, $params->domain) // throws error if hosting deleted

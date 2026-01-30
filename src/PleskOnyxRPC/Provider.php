@@ -10,6 +10,7 @@ use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionProviders\SharedHosting\Category as SharedHosting;
 use Upmind\ProvisionBase\Result\ProviderResult;
 use Upmind\ProvisionBase\Helper;
+use Upmind\ProvisionProviders\SharedHosting\Data\ChangePrimaryDomainParams;
 use Upmind\ProvisionProviders\SharedHosting\PleskOnyxRPC\Api\Client;
 use PleskX\Api\Exception as PleskException;
 use PleskX\Api\Client\Exception as PleskClientException;
@@ -89,11 +90,12 @@ class Provider extends SharedHosting implements ProviderInterface
             return $this->createReseller($params);
         }
 
-        $login = $params->username ?? $this->generateUsername($params->domain);
+        $username = $params->username ?? $this->generateUsername($params->domain);
+        $ftpLogin = $username;
         $ownerLogin = $params->owner_username;
         $email = $params->email;
         $passwd = $params->password ?: Helper::generatePassword();
-        $pname = $params->customer_name ?? $login;
+        $pname = $params->customer_name ?? $username;
         $domain = $params->domain;
         $ip_address = $params->custom_ip;
 
@@ -101,12 +103,14 @@ class Provider extends SharedHosting implements ProviderInterface
 
         if ($params->customer_id) {
             $customerId = $params->customer_id;
+            $customerInfo = $this->getCustomerInfo($client, $customerId);
+            $username = $customerInfo->data->gen_info->getValue('login');
         } else {
             try {
                 //create customer
                 $customerParams = [
                     'pname' => $pname,
-                    'login' => $login,
+                    'login' => $username,
                     'passwd' => $passwd,
                     'email' => $email,
                 ];
@@ -172,7 +176,7 @@ class Provider extends SharedHosting implements ProviderInterface
                 'htype' => 'vrt_hst'
             ];
             $hostingParams = [
-                'ftp_login' => $login,
+                'ftp_login' => $ftpLogin,
                 'ftp_password' => $passwd
             ];
             $webspace = $client->webspace()->create($webspaceParams, $hostingParams, $plan->name);
@@ -192,7 +196,7 @@ class Provider extends SharedHosting implements ProviderInterface
             throw $e;
         }
 
-        return $this->getInfo(new AccountUsername(['username' => $login]))
+        return $this->getInfo(new AccountUsername(['customer_id' => $customerId, 'username' => $username, 'domain' => $domain]))
             ->setMessage('Subscription created')
             ->setDebug(['customer' => $newCustomer ?? $customerId, 'webspace' => $webspace]);
     }
@@ -643,6 +647,51 @@ class Provider extends SharedHosting implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function changePrimaryDomain(ChangePrimaryDomainParams $params): AccountInfo
+    {
+        $username = $params->username;
+
+        if (!$params->domain) {
+            $this->errorResult('Current primary domain is required');
+        }
+
+        if ($this->loginBelongsToReseller($username)) {
+            $this->errorResult('Operation not supported for resellers');
+        }
+
+        $webSpaceRequest = [
+            'set' => [
+                'filter' => [
+                    'name' => $params->domain,
+                ],
+                'values' => [
+                    'gen_setup' => [
+                        'name' => $params->new_domain,
+                    ]
+                ]
+            ],
+        ];
+
+        try {
+            $this->getClient()->webspace()->request($webSpaceRequest);
+
+            return $this->getInfo(AccountUsername::create([
+                'customer_id' => $params->customer_id,
+                'username' => $params->username,
+                'domain' => $params->new_domain,
+                'is_reseller' => $params->is_reseller,
+            ]))->setMessage('Primary domain changed');
+        } catch (Throwable $t) {
+            $this->handleException($t, 'Change Primary Domain');
+        }
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     protected function changeResellerPackage(string $username, string $plan): EmptyResult
     {
         $client = $this->getClient();
