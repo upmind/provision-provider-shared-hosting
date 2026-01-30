@@ -48,7 +48,7 @@ class Provider extends Category implements ProviderInterface
         return AboutData::create()
             ->setName('PanelAlpha')
             ->setDescription('Create and manage PanelAlpha accounts and resellers using the PanelAlpha API')
-            ->setLogoUrl('https://api.upmind.io/images/logos/provision/panel-alpha-logo.png');
+            ->setLogoUrl('https://api.upmind.io/images/logos/provision/panel-alpha-logo.svg');
     }
 
     /**
@@ -81,17 +81,6 @@ class Provider extends Category implements ProviderInterface
         } catch (Throwable $e) {
             $this->handleException($e);
         }
-    }
-
-    /**
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    protected function _getInfo(string $userId, ?string $serviceId, ?string $domain, string $message): AccountInfo
-    {
-        $info = $this->api()->getAccountData($userId, $serviceId, $domain);
-
-        return AccountInfo::create($info)->setMessage($message);
     }
 
     /**
@@ -360,6 +349,17 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    protected function _getInfo(string $userId, ?string $serviceId, ?string $domain, string $message): AccountInfo
+    {
+        $info = $this->api()->getAccountData($userId, $serviceId, $domain);
+
+        return AccountInfo::create($info)->setMessage($message);
+    }
+
+    /**
      * @return no-return
      *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
@@ -425,7 +425,7 @@ class Provider extends Category implements ProviderInterface
     {
         if ($params->customer_id !== null) {
             try {
-                $user = $this->api()->makeRequest('users/' . $params->customer_id);
+                $user = $this->api()->getUserConfig($params->customer_id);
 
                 if (0 === preg_match('/\_deleted\_\d+$/', $user['email'])) {
                     return (string) $params->customer_id;
