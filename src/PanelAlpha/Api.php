@@ -409,16 +409,18 @@ class Api
         }
 
         $disk = UnitsConsumed::create()
-            ->setUsed((int)$usage['storage']["usage"] / 1024 / 1024)
+            ->setUsed(round((int) $usage['storage']["usage"] / (1024 * 1024), 2))
             ->setLimit(isset($usage['storage']['maximum']) && (int) $usage['storage']['maximum'] > 0
-                ? (int) ($usage['storage']['maximum'] / 1024 / 1024)
+                ? round((int) ($usage['storage']['maximum'] / (1024 * 1024)), 2)
                 : null
             );
 
         $bandwidth = UnitsConsumed::create()
-            ->setUsed((int)$usage['bandwidth']["usage"] / 1024 / 1024)
+            ->setUsed(round((int) $usage['bandwidth']["usage"] / (1024 * 1024), 2))
             ->setLimit(isset($usage['bandwidth']['maximum']) && (int) $usage['bandwidth']['maximum'] > 0
-                ? (int) ($usage['bandwidth']['maximum'] / 1024 / 1024) : null);
+                ? round((int) ($usage['bandwidth']['maximum'] / (1024 * 1024)), 2)
+                : null
+            );
 
         return UsageData::create()
             ->setDiskMb($disk)
