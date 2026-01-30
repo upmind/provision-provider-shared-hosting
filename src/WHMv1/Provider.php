@@ -19,6 +19,7 @@ use Upmind\ProvisionProviders\SharedHosting\Category as SharedHosting;
 use Upmind\ProvisionBase\Helper;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
+use Upmind\ProvisionProviders\SharedHosting\Data\ChangePrimaryDomainParams;
 use Upmind\ProvisionProviders\SharedHosting\WHMv1\Api\Request;
 use Upmind\ProvisionProviders\SharedHosting\WHMv1\Api\Response;
 use Upmind\ProvisionBase\Result\ProviderResult;
@@ -49,22 +50,15 @@ class Provider extends SharedHosting implements ProviderInterface
      */
     protected const MAX_USERNAME_GENERATION_ATTEMPTS = 5;
 
-    /**
-     * @var WHMv1Credentials
-     */
-    protected $configuration;
-
-    /**
-     * @var Client|null
-     */
-    protected $client;
+    protected WHMv1Credentials $configuration;
+    protected ?Client $client = null;
 
     /**
      * List of whm functions available to this configuration.
      *
      * @var string[]|null
      */
-    protected $functions;
+    protected ?array $functions = null;
 
     public function __construct(WHMv1Credentials $configuration)
     {
@@ -110,7 +104,8 @@ class Provider extends SharedHosting implements ProviderInterface
             'suspendacct',
             'unsuspendacct',
             'passwd',
-            'removeacct'
+            'removeacct',
+            'modifyacct'
         ];
 
         $missingFunctions = collect($requiredFunctions)->diff($availableFunctions);
@@ -388,10 +383,8 @@ class Provider extends SharedHosting implements ProviderInterface
             }
 
             $this->changeResellerOptions($params->username, $params->reseller_options ?? new ResellerOptionParams());
-        } else {
-            if ($isReseller) {
-                $this->revokeReseller(AccountUsername::create($params));
-            }
+        } elseif ($isReseller) {
+            $this->revokeReseller(AccountUsername::create($params));
         }
 
         $response = $this->makeApiCall('POST', 'changepackage', [
@@ -402,6 +395,51 @@ class Provider extends SharedHosting implements ProviderInterface
 
         return $this->getInfo(AccountUsername::create(['username' => $params->username]))
             ->setMessage('Package/limits updated');
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    public function changePrimaryDomain(ChangePrimaryDomainParams $params): AccountInfo
+    {
+        try {
+            $response = $this->makeApiCall('POST', 'modifyacct', [
+                'user' => $params->username,
+                'domain' => mb_strtolower($params->new_domain),
+            ]);
+
+            $this->processResponse($response);
+        } catch (Throwable $t) {
+            if (!$this->exceptionWasTimeout($t)) {
+                throw $t;
+            }
+
+            try {
+                // just in case WHM is running any weird post-change-primary-domain scripts,
+                // let's see if we can return success.
+                $info = $this->getInfo(AccountUsername::create(['username' => $params->username]));
+
+                // If primary domain has been updated, return success
+                if ($info->domain === $params->new_domain) {
+                    return $info->setMessage('Primary domain updated')
+                        ->setDebug([
+                            'provider_exception' => ProviderResult::formatException(
+                                $this->getFirstException($t)
+                            ),
+                        ]);
+                }
+
+                // Let it fall through to re-throw the original exception
+            } catch (Throwable $getInfoException) {
+                // do nothing...
+            }
+
+            throw $t;
+        }
+
+        return $this->getInfo(AccountUsername::create(['username' => $params->username]))
+            ->setMessage('Primary domain updated');
     }
 
     /**
@@ -985,6 +1023,7 @@ class Provider extends SharedHosting implements ProviderInterface
 
             if ($e instanceof TransferException) {
                 if ($e instanceof RequestException && $e->hasResponse()) {
+                    /** @var \Psr\Http\Message\ResponseInterface $response */
                     $response = $e->getResponse();
                     $responseBody = $response->getBody()->__toString();
                     $resultData = json_decode($responseBody, true);

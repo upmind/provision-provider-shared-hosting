@@ -29,6 +29,9 @@
     "require-dev": {
         "phpstan/phpstan": "^1.10"
     },
+    "config": {
+        "sort-packages": true
+    },
     "extra": {
         "laravel": {
             "providers": [
