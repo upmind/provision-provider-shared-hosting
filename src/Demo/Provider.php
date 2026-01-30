@@ -143,7 +143,7 @@ class Provider extends Category implements ProviderInterface
         );
 
         return $info->setMessage('Primary domain name changed')
-            ->setDomain($params->domain);
+            ->setDomain($params->new_domain);
     }
 
     /**
