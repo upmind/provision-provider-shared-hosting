@@ -27,11 +27,7 @@ class Api
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function makeRequest(
-        string  $command,
-        ?array  $body = null,
-        ?string $method = 'GET'
-    ): ?array
+    public function makeRequest(string  $command, ?array  $body = null, ?string $method = 'GET'): ?array
     {
         $requestParams = [];
 
@@ -51,11 +47,11 @@ class Api
 
         $response = $this->client->request($method, "api/admin/{$command}", $requestParams);
 
-        $result = $response->getBody()->getContents();
+        $result = $response->getBody()->__toString();
 
         $response->getBody()->close();
 
-        if ($result === "") {
+        if ($result === '') {
             return null;
         }
 
@@ -78,6 +74,7 @@ class Api
 
         $query = [
             'plan_id' => $planId,
+            'status' => 'active', // Set initial status to active
         ];
 
         $result = $this->makeRequest("users/{$userId}/services", $query, 'POST');
@@ -412,12 +409,18 @@ class Api
         }
 
         $disk = UnitsConsumed::create()
-            ->setUsed((int)$usage['storage']["usage"] / 1024 / 1024)
-            ->setLimit($usage['storage']['maximum'] != 0 ? (int)($usage['storage']['maximum'] / 1024 / 1024) : null);
+            ->setUsed(round((int) $usage['storage']["usage"] / (1024 * 1024), 2))
+            ->setLimit(isset($usage['storage']['maximum']) && (int) $usage['storage']['maximum'] > 0
+                ? round((int) ($usage['storage']['maximum'] / (1024 * 1024)), 2)
+                : null
+            );
 
         $bandwidth = UnitsConsumed::create()
-            ->setUsed((int)$usage['bandwidth']["usage"] / 1024 / 1024)
-            ->setLimit($usage['bandwidth']['maximum'] != 0 ? (int)($usage['bandwidth']['maximum'] / 1024 / 1024) : null);
+            ->setUsed(round((int) $usage['bandwidth']["usage"] / (1024 * 1024), 2))
+            ->setLimit(isset($usage['bandwidth']['maximum']) && (int) $usage['bandwidth']['maximum'] > 0
+                ? round((int) ($usage['bandwidth']['maximum'] / (1024 * 1024)), 2)
+                : null
+            );
 
         return UsageData::create()
             ->setDiskMb($disk)
