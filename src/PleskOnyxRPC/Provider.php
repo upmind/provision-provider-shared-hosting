@@ -1473,14 +1473,20 @@ class Provider extends SharedHosting implements ProviderInterface
             switch ($limit['name']) {
                 case 'disk_space':
                     $disk = UnitsConsumed::create()
-                        ->setUsed((int) $customerInfo->data->stat->getValue('disk_space') / (1024 * 1024))
+                        ->setUsed(round(
+                            (int) $customerInfo->data->stat->getValue('disk_space') / (1024 * 1024),
+                            2
+                        ))
                         ->setLimit($limit['value'] === '-1'
                             ? null
                             : (int) $limit['value'] / (1024 * 1024));
                     break;
                 case 'max_traffic':
                     $bandwidth = UnitsConsumed::create()
-                        ->setUsed((int) $webspaceInfo->data->stat->getValue('traffic') / (1024 * 1024))
+                        ->setUsed(round(
+                            (int) $webspaceInfo->data->stat->getValue('traffic') / (1024 * 1024),
+                            2
+                        ))
                         ->setLimit($limit['value'] === '-1'
                             ? null
                             : (int) $limit['value'] / (1024 * 1024));
