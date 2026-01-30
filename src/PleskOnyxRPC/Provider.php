@@ -1561,7 +1561,7 @@ class Provider extends SharedHosting implements ProviderInterface
                     break;
                 case 'max_site':
                     $websites = UnitsConsumed::create()
-                        ->setUsed((int) $webspaceInfo->data->stat->getValue('sites'))
+                        ->setUsed((int) $webspaceInfo->data->stat->getValue('domains'))
                         ->setLimit($limit['value'] === '-1'
                             ? null
                             : (int) $limit['value']);
