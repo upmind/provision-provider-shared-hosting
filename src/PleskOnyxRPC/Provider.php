@@ -703,9 +703,9 @@ class Provider extends SharedHosting implements ProviderInterface
             ],
         ];
 
-        // Add domain to the filter if provided.
+        // Replace filter with domain name if provided for more precise targeting.
         if ($params->domain) {
-            $webSpaceRequest['set']['filter']['name'] = $params->domain;
+            $webSpaceRequest['set']['filter'] = ['name' => $params->domain];
         }
 
         try {
