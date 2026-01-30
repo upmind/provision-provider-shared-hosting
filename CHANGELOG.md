@@ -2,6 +2,13 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.14.0](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.14.0) - 2026-01-30
+
+- Add changePrimaryDomain() function
+  - Add cPanel implementation
+  - Add Plesk implementation
+- Fix Plesk create() for subsequent orders by the same customer_id
+
 ## [v6.13.0](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.13.0) - 2025-12-17
 
 - Implement SPanel provider
