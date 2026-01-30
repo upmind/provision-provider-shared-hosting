@@ -651,6 +651,10 @@ class Provider extends SharedHosting implements ProviderInterface
     {
         $username = $params->username;
 
+        if (!$params->domain) {
+            $this->errorResult('Current primary domain is required');
+        }
+
         if ($this->loginBelongsToReseller($username)) {
             $this->errorResult('Operation not supported for resellers');
         }
@@ -658,7 +662,7 @@ class Provider extends SharedHosting implements ProviderInterface
         $webSpaceRequest = [
             'set' => [
                 'filter' => [
-                    'owner-login' => $username,
+                    'name' => $params->domain,
                 ],
                 'values' => [
                     'gen_setup' => [
@@ -668,17 +672,11 @@ class Provider extends SharedHosting implements ProviderInterface
             ],
         ];
 
-        // Add domain to the filter if provided.
-        if ($params->domain) {
-            $webSpaceRequest['set']['filter']['name'] = $params->domain;
-        }
-
         try {
             $this->getClient()->webspace()->request($webSpaceRequest);
 
             return $this->getInfo(AccountUsername::create([
                 'customer_id' => $params->customer_id,
-                'subscription_id' => $params->subscription_id,
                 'username' => $params->username,
                 'domain' => $params->new_domain,
                 'is_reseller' => $params->is_reseller,
