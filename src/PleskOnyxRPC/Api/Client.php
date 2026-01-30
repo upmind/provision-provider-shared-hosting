@@ -59,6 +59,6 @@ class Client extends PleskClient
             $this->logger->debug("Plesk API response:\n" . $xmlString);
         }
 
-        return parent::_verifyResponse($xml);
+        parent::_verifyResponse($xml);
     }
 }
