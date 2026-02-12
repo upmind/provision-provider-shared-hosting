@@ -51,10 +51,9 @@ class Provider extends Category implements ProviderInterface
         public static function aboutProvider(): AboutData
     {
         return AboutData::create()
-            ->setName('CyberPanel Provider')
-            ->setDescription('CyberPanel hosting provider')
-            ->setLogoUrl('https://cyberpanel.net/wp-content/uploads/2025/04/cyberpanel-logo-icon_only.png')
-            ->setIcon('shield');
+            ->setName('CyberPanel')
+            ->setDescription('Create and manage CyberPanel accounts using the CyberPanel API')
+            ->setLogoUrl('https://api.upmind.io/images/logos/provision/cyberpanel-logo.svg');
     }
 
     /**
