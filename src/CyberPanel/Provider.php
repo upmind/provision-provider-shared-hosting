@@ -53,7 +53,7 @@ class Provider extends Category implements ProviderInterface
         return AboutData::create()
             ->setName('CyberPanel')
             ->setDescription('Create and manage CyberPanel accounts using the CyberPanel API')
-            ->setLogoUrl('https://api.upmind.io/images/logos/provision/cyberpanel-logo.svg');
+            ->setLogoUrl('https://api.upmind.io/images/logos/provision/cyber-panel-logo.svg');
     }
 
     /**
