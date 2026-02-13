@@ -584,6 +584,10 @@ class Provider extends Category implements ProviderInterface
             'headers' => [
                 'Content-Type' => 'application/json',
             ],
+            'auth' => [
+                $this->configuration->getUsername(),
+                $this->configuration->getPassword()
+            ],
             'handler' => $this->getGuzzleHandlerStack(),
         ]);
 
