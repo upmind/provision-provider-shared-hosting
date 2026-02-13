@@ -583,6 +583,7 @@ class Provider extends Category implements ProviderInterface
             'timeout' => 30,
             'headers' => [
                 'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
             ],
             'auth' => [
                 $this->configuration->getUsername(),
