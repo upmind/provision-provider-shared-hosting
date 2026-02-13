@@ -671,19 +671,19 @@ class Provider extends Category implements ProviderInterface
             $message = $data['message'] ?? 'Unknown API error';
 
             // Handle specific error cases
-            if (strpos(strtolower($message), 'domain') !== false && strpos(strtolower($message), 'exist') !== false) {
+            if (stripos($message, 'domain') !== false && stripos($message, 'exist') !== false) {
                 $this->errorResult('Domain already exists');
             }
 
-            if (strpos(strtolower($message), 'package') !== false && strpos(strtolower($message), 'invalid') !== false) {
+            if (stripos($message, 'package') !== false && stripos($message, 'invalid') !== false) {
                 $this->errorResult('Invalid hosting package');
             }
 
-            if (strpos(strtolower($message), 'quota') !== false || strpos(strtolower($message), 'limit') !== false) {
+            if (stripos($message, 'quota') !== false || stripos($message, 'limit') !== false) {
                 $this->errorResult('Server quota exceeded');
             }
 
-            if (strpos(strtolower($message), 'auth') !== false || strpos(strtolower($message), 'login') !== false) {
+            if (stripos($message, 'auth') !== false || stripos($message, 'login') !== false) {
                 $this->errorResult('Authentication failed');
             }
 
