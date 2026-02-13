@@ -579,16 +579,10 @@ class Provider extends Category implements ProviderInterface
             'base_uri' => $this->configuration->hasPort()
                 ? sprintf('https://%s:%s', $this->configuration->getHostname(), $this->configuration->getPort())
                 : sprintf('https://%s', $this->configuration->getHostname()),
-            'port' => $this->configuration->getPort(),
             'verify' => $this->configuration->shouldVerifySsl(),
             'timeout' => 30,
-            'auth' => [
-                $this->configuration->getUsername(),
-                $this->configuration->getPassword(),
-            ],
             'headers' => [
                 'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
             ],
             'handler' => $this->getGuzzleHandlerStack(),
         ]);
@@ -613,7 +607,7 @@ class Provider extends Category implements ProviderInterface
         ]);
 
         try {
-            $response = $this->getClient()->request('POST', "/api/{$endpoint}", [
+            $response = $this->getClient()->request('POST', "api/{$endpoint}", [
                 'json' => $data,
             ]);
 
@@ -623,24 +617,21 @@ class Provider extends Category implements ProviderInterface
                 'endpoint' => $endpoint,
                 'error' => $e->getMessage(),
             ]);
-
         } catch (RequestException $e) {
             $response = $e->getResponse();
             $statusCode = $response ? $response->getStatusCode() : 0;
-            $responseBody = $response ? $response->getBody()->getContents() : '';
+            $responseBody = $response ? $response->getBody()->__toString() : '';
 
             $this->errorResult('CyberPanel API request failed', [
                 'endpoint' => $endpoint,
                 'status_code' => $statusCode,
                 'response' => $responseBody,
             ]);
-
         } catch (TransferException $e) {
             $this->errorResult('CyberPanel API transfer failed', [
                 'endpoint' => $endpoint,
                 'error' => $e->getMessage(),
             ]);
-
         } catch (Throwable $e) {
             $this->errorResult('Unexpected error occurred', [
                 'endpoint' => $endpoint,
@@ -654,7 +645,7 @@ class Provider extends Category implements ProviderInterface
      */
     protected function parseResponse(ResponseInterface $response): array
     {
-        $body = $response->getBody()->getContents();
+        $body = $response->getBody()->__toString();
 
         try {
             $data = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
