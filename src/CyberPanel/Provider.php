@@ -99,13 +99,18 @@ class Provider extends Category implements ProviderInterface
             // Make API call to create website
             $response = $this->apiRequest('createWebsite', $apiData);
 
-            if (!isset($response['createWebSiteStatus']) || (int) $response['createWebSiteStatus'] !== 1) {
-                $debug = isset($response['error_message']) ? ['error_message' => $response['error_message']] : [];
-                $this->errorResult('Failed to create Account', $debug);
-            }
-
             // Sanitize response for debug data
             $debugData = $this->sanitizeDataForLogging($response);
+
+            if (!isset($response['createWebSiteStatus']) || (int) $response['createWebSiteStatus'] !== 1) {
+                $debug = [
+                    'domain' => $params->domain,
+                    'username' => $username,
+                    'error' => $response['error_message'] ?? 'Unknown error',
+                    'api_response' => $debugData,
+                ];
+                $this->errorResult('Failed to create Account', $debug);
+            }
 
             // Create AccountInfo with response data
             $accountInfo = AccountInfo::create()
@@ -122,10 +127,6 @@ class Provider extends Category implements ProviderInterface
             // CyberPanel API response is directly at root level, not in 'data' field
             if (isset($response['LinuxUser'])) {
                 $accountInfo->setUsername($response['LinuxUser']);
-            }
-
-            if (isset($response['createWebSiteStatus']) && (int) $response['createWebSiteStatus'] === 1) {
-                $accountInfo->setMessage('Website created successfully');
             }
 
             return $accountInfo;
