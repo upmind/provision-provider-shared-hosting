@@ -11,7 +11,7 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * CyberPanel API credentials.
  *
  * @property-read string $hostname CyberPanel server hostname
- * @property-read int|null $port CyberPanel serves port
+ * @property-read int|null $port CyberPanel server port
  * @property-read string $username CyberPanel admin username
  * @property-read string $password CyberPanel admin password (sensitive)
  * @property-read bool|null $ssl_verify Whether to verify SSL certificates (default: false)
