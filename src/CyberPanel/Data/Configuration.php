@@ -10,20 +10,40 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
 /**
  * CyberPanel API credentials.
  *
- * @property-read string $hostname CyberPanel server hostname (e.g., https://89.117.57.23:8090)
+ * @property-read string $hostname CyberPanel server hostname
  * @property-read string $username CyberPanel admin username
  * @property-read string $password CyberPanel admin password (sensitive)
- * @property-read bool|null $ssl_verify Whether to verify SSL certificates (default: true)
+ * @property-read bool|null $ssl_verify Whether to verify SSL certificates (default: false)
  */
 class Configuration extends DataSet
 {
     public static function rules(): Rules
     {
         return new Rules([
-            'hostname' => ['required', 'string', 'regex:/^https?:\/\/.+/'],
+            'hostname' => ['required', 'string', 'domain_name'],
             'username' => ['required', 'string', 'min:1'],
             'password' => ['required', 'string', 'min:1'],
             'ssl_verify' => ['nullable', 'boolean'],
         ]);
+    }
+
+    public function getHostname(): string
+    {
+        return $this->hostname;
+    }
+
+    public function getUsername(): string
+    {
+        return $this->username;
+    }
+
+    public function getPassword(): string
+    {
+        return $this->password;
+    }
+
+    public function shouldVerifySsl(): bool
+    {
+        return (bool) $this->ssl_verify;
     }
 }
