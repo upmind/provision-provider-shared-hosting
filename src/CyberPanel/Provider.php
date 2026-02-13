@@ -296,17 +296,24 @@ class Provider extends Category implements ProviderInterface
      */
     public function getLoginUrl(GetLoginUrlParams $params): LoginUrl
     {
+        if (!$params->current_password) {
+            $this->errorResult('Password is required');
+        }
+
         try {
             // CyberPanel typically does not provide a user SSO token via public API.
             // Provide manual URL fallback.
             $host = rtrim($this->configuration->hostname, '/');
             $hasScheme = (bool) parse_url($host, PHP_URL_SCHEME);
             $base = $hasScheme ? $host : ('https://' . $host);
+            $base = rtrim($base, '/');
 
-            $loginUrl = rtrim($base, '/') . '/';
+            if ($this->configuration->hasPort()) {
+                $base .= ':' . $this->configuration->getPort();
+            }
 
             return LoginUrl::create()
-                ->setLoginUrl($loginUrl)
+                ->setLoginUrl(rtrim($base, '/') . '/')
                 ->setForIp($params->user_ip)
                 ->setExpires(null)
                 ->setPostFields([
