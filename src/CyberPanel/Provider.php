@@ -8,6 +8,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\TransferException;
+use JsonException;
 use Psr\Http\Message\ResponseInterface;
 use Throwable;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
@@ -32,7 +33,7 @@ use Upmind\ProvisionProviders\SharedHosting\Data\SuspendParams;
 use Upmind\ProvisionProviders\SharedHosting\CyberPanel\Data\Configuration;
 
 /**
- * CyberPanel hosting provider.
+ * CyberPanel provision provider.
  */
 class Provider extends Category implements ProviderInterface
 {
@@ -42,7 +43,6 @@ class Provider extends Category implements ProviderInterface
     public function __construct(Configuration $configuration)
     {
         $this->configuration = $configuration;
-        $this->client = $this->getClient();
     }
 
     /**
@@ -68,10 +68,6 @@ class Provider extends Category implements ProviderInterface
             $this->errorResult('Domain name is required');
         }
 
-        if (!$params->package_name) {
-            $this->errorResult('Package name is required');
-        }
-
         // Generate username and password if not provided
         $username = $params->username ?: $this->generateUsername($params->domain);
         $password = $params->password ?: Helper::generatePassword();
@@ -93,8 +89,6 @@ class Provider extends Category implements ProviderInterface
             'packageName' => $params->package_name,
             'websiteOwner' => $username,
             'ownerPassword' => $password,
-            'adminUser' => $this->configuration->username, // Add admin user field
-            'adminPass' => $this->configuration->password, // Add admin password field
             'ssl' => 1, // Enable SSL by default
             'php' => 1, // Enable PHP by default
             'dns' => 1, // Enable DNS by default
@@ -124,7 +118,7 @@ class Provider extends Category implements ProviderInterface
                 $accountInfo->setUsername($response['LinuxUser']);
             }
 
-            if (isset($response['createWebSiteStatus']) && $response['createWebSiteStatus'] == 1) {
+            if (isset($response['createWebSiteStatus']) && (int) $response['createWebSiteStatus'] === 1) {
                 $accountInfo->setMessage('Website created successfully');
             }
 
@@ -153,8 +147,6 @@ class Provider extends Category implements ProviderInterface
         try {
             // Use getUserInfo endpoint from blueprint instead of getWebsiteDetails
             $response = $this->apiRequest('getUserInfo', [
-                'adminUser' => $this->configuration->username,
-                'adminPass' => $this->configuration->password,
                 'userName' => $username,
             ]);
 
@@ -298,8 +290,6 @@ class Provider extends Category implements ProviderInterface
      */
     public function getLoginUrl(GetLoginUrlParams $params): LoginUrl
     {
-        $username = $params->username;
-
         try {
             // CyberPanel typically does not provide a user SSO token via public API.
             // Provide manual URL fallback.
@@ -313,15 +303,17 @@ class Provider extends Category implements ProviderInterface
                 ->setLoginUrl($loginUrl)
                 ->setForIp($params->user_ip)
                 ->setExpires(null)
-                ->setPostFields(null)
+                ->setPostFields([
+                    'username' => $params->username,
+                    'password' => $params->current_password
+                ])
                 ->setMessage('Manual login required');
-
         } catch (ProvisionFunctionError $e) {
             throw $e;
         } catch (Throwable $e) {
             $this->errorResult('Failed to generate login URL', [
                 'error' => $e->getMessage(),
-                'username' => $username,
+                'username' => $params->username,
             ]);
         }
     }
@@ -345,8 +337,6 @@ class Provider extends Category implements ProviderInterface
         try {
             // Use correct API endpoint from blueprint: changeUserPassAPI
             $response = $this->apiRequest('changeUserPassAPI', [
-                'adminUser' => $this->configuration->username,
-                'adminPass' => $this->configuration->password,
                 'websiteOwner' => $username,
                 'ownerPassword' => $newPassword,
             ]);
@@ -393,8 +383,6 @@ class Provider extends Category implements ProviderInterface
         try {
             // Use correct API endpoint from blueprint: changePackageAPI
             $response = $this->apiRequest('changePackageAPI', [
-                'adminUser' => $this->configuration->username,
-                'adminPass' => $this->configuration->password,
                 'websiteName' => $domain,
                 'packageName' => $newPackage,
             ]);
@@ -442,8 +430,6 @@ class Provider extends Category implements ProviderInterface
         try {
             // Use correct API endpoint from blueprint: submitWebsiteStatus
             $payload = [
-                'adminUser' => $this->configuration->username,
-                'adminPass' => $this->configuration->password,
                 'websiteName' => $domain,
                 'state' => 'Suspend', // Correct parameter name from blueprint
             ];
@@ -491,8 +477,6 @@ class Provider extends Category implements ProviderInterface
         try {
             // Use correct API endpoint from blueprint: submitWebsiteStatus
             $response = $this->apiRequest('submitWebsiteStatus', [
-                'adminUser' => $this->configuration->username,
-                'adminPass' => $this->configuration->password,
                 'websiteName' => $domain,
                 'state' => 'Activate', // Correct parameter name from blueprint
             ]);
@@ -532,8 +516,6 @@ class Provider extends Category implements ProviderInterface
         try {
             // Use correct API endpoint from blueprint: deleteWebsite
             $response = $this->apiRequest('deleteWebsite', [
-                'adminUser' => $this->configuration->username,
-                'adminPass' => $this->configuration->password,
                 'domainName' => $this->getDomainForUser($username), // Get domain for the user
             ]);
             $debugData = $this->sanitizeDataForLogging($response);
@@ -594,18 +576,21 @@ class Provider extends Category implements ProviderInterface
         }
 
         $this->client = new Client([
-            'handler' => $this->getGuzzleHandlerStack(),
-            'base_uri' => $this->configuration->hostname . '/',
-            'verify' => $this->configuration->ssl_verify ?? true,
+            'base_uri' => $this->configuration->hasPort()
+                ? sprintf('https://%s:%s', $this->configuration->getHostname(), $this->configuration->getPort())
+                : sprintf('https://%s', $this->configuration->getHostname()),
+            'port' => $this->configuration->getPort(),
+            'verify' => $this->configuration->shouldVerifySsl(),
             'timeout' => 30,
             'auth' => [
-                $this->configuration->username,
-                $this->configuration->password,
+                $this->configuration->getUsername(),
+                $this->configuration->getPassword(),
             ],
             'headers' => [
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
             ],
+            'handler' => $this->getGuzzleHandlerStack(),
         ]);
 
         return $this->client;
@@ -622,20 +607,17 @@ class Provider extends Category implements ProviderInterface
      */
     protected function apiRequest(string $endpoint, array $data = []): array
     {
-        $url = "api/{$endpoint}";
-
-        // Sanitize data for logging (remove sensitive information)
-        $logData = $this->sanitizeDataForLogging($data);
+        $data = array_merge($data, [
+            'adminUser' => $this->configuration->getUsername(),
+            'adminPass' => $this->configuration->getPassword(),
+        ]);
 
         try {
-            $response = $this->client->post($url, [
+            $response = $this->getClient()->request('POST', "/api/{$endpoint}", [
                 'json' => $data,
             ]);
 
-            $responseData = $this->parseResponse($response);
-
-            return $responseData;
-
+            return $this->parseResponse($response);
         } catch (ConnectException $e) {
             $this->errorResult('Unable to connect to CyberPanel API', [
                 'endpoint' => $endpoint,
@@ -673,12 +655,13 @@ class Provider extends Category implements ProviderInterface
     protected function parseResponse(ResponseInterface $response): array
     {
         $body = $response->getBody()->getContents();
-        $data = json_decode($body, true);
 
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            $this->errorResult('Invalid response format', [
+        try {
+            $data = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            $this->errorResult('Failed to parse API response', [
                 'response_body' => $body,
-                'json_error' => json_last_error_msg(),
+                'json_error' => $e->getMessage(),
             ]);
         }
 
