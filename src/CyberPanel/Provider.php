@@ -16,6 +16,7 @@ use Upmind\ProvisionBase\Helper;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionProviders\SharedHosting\Category;
+use Upmind\ProvisionProviders\SharedHosting\Data\ChangePrimaryDomainParams;
 use Upmind\ProvisionProviders\SharedHosting\Data\CreateParams;
 use Upmind\ProvisionProviders\SharedHosting\Data\AccountInfo;
 use Upmind\ProvisionProviders\SharedHosting\Data\AccountUsage;
@@ -414,6 +415,14 @@ class Provider extends Category implements ProviderInterface
                 'package' => $newPackage,
             ]);
         }
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function changePrimaryDomain(ChangePrimaryDomainParams $params): AccountInfo
+    {
+        $this->errorResult('Operation not supported');
     }
 
     /**
