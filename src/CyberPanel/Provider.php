@@ -99,16 +99,13 @@ class Provider extends Category implements ProviderInterface
             // Make API call to create website
             $response = $this->apiRequest('createWebsite', $apiData);
 
-            // Sanitize response for debug data
-            $debugData = $this->sanitizeDataForLogging($response);
-
             if (!isset($response['createWebSiteStatus']) || (int) $response['createWebSiteStatus'] !== 1) {
                 $debug = [
                     'domain' => $params->domain,
                     'username' => $username,
-                    'error' => $response['error_message'] ?? 'Unknown error',
-                    'api_response' => $debugData,
+                    'error' => $response['error_message'] ?? 'Unknown error'
                 ];
+
                 $this->errorResult('Failed to create Account', $debug);
             }
 
@@ -120,8 +117,7 @@ class Provider extends Category implements ProviderInterface
                 ->setSuspended(false)
                 ->setReseller(false)
                 ->setServerHostname($this->configuration->hostname)
-                ->setMessage('Account created successfully')
-                ->setDebug(['api_response' => $debugData]);
+                ->setMessage('Account created successfully');
 
             // Add additional data if available in response
             // CyberPanel API response is directly at root level, not in 'data' field
@@ -219,8 +215,6 @@ class Provider extends Category implements ProviderInterface
                 'websiteOwner' => $username,
             ]);
 
-            $debugData = $this->sanitizeDataForLogging($response);
-
             // Extract usage data safely
             $data = $response['data'] ?? $response;
 
@@ -274,8 +268,7 @@ class Provider extends Category implements ProviderInterface
 
             return AccountUsage::create()
                 ->setUsageData($usage)
-                ->setMessage($message)
-                ->setDebug(['api_response' => $debugData]);
+                ->setMessage($message);
 
         } catch (ProvisionFunctionError $e) {
             // If API indicated not found earlier through parseResponse, it would have thrown already
@@ -350,11 +343,11 @@ class Provider extends Category implements ProviderInterface
                 'ownerPassword' => $newPassword,
             ]);
 
-            $debugData = $this->sanitizeDataForLogging($response);
+            if (!isset($response['changeStatus']) || (int) $response['changeStatus'] !== 1) {
+                $this->errorResult('Failed to change password');
+            }
 
-            return EmptyResult::create()
-                ->setMessage('Password updated successfully')
-                ->setDebug(['api_response' => $debugData]);
+            return EmptyResult::create()->setMessage('Password updated successfully');
 
         } catch (ProvisionFunctionError $e) {
             throw $e;
@@ -396,8 +389,6 @@ class Provider extends Category implements ProviderInterface
                 'packageName' => $newPackage,
             ]);
 
-            $debugData = $this->sanitizeDataForLogging($response);
-
             // Create AccountInfo directly without calling getInfo
             return AccountInfo::create()
                 ->setUsername($username)
@@ -406,8 +397,7 @@ class Provider extends Category implements ProviderInterface
                 ->setSuspended(false)
                 ->setReseller(false)
                 ->setServerHostname($this->configuration->hostname)
-                ->setMessage('Package updated successfully')
-                ->setDebug(['api_response' => $debugData]);
+                ->setMessage('Package updated successfully');
 
         } catch (ProvisionFunctionError $e) {
             throw $e;
@@ -452,7 +442,6 @@ class Provider extends Category implements ProviderInterface
             ];
 
             $response = $this->apiRequest('submitWebsiteStatus', $payload);
-            $debugData = $this->sanitizeDataForLogging($response);
 
             // Create AccountInfo directly without calling getInfo
             return AccountInfo::create()
@@ -463,8 +452,7 @@ class Provider extends Category implements ProviderInterface
                 ->setSuspendReason($reason)
                 ->setReseller(false)
                 ->setServerHostname($this->configuration->hostname)
-                ->setMessage('Account suspended successfully')
-                ->setDebug(['api_response' => $debugData]);
+                ->setMessage('Account suspended successfully');
 
         } catch (ProvisionFunctionError $e) {
             throw $e;
@@ -497,7 +485,6 @@ class Provider extends Category implements ProviderInterface
                 'websiteName' => $domain,
                 'state' => 'Activate', // Correct parameter name from blueprint
             ]);
-            $debugData = $this->sanitizeDataForLogging($response);
 
             // Create AccountInfo directly without calling getInfo
             return AccountInfo::create()
@@ -508,8 +495,7 @@ class Provider extends Category implements ProviderInterface
                 ->setSuspendReason(null)
                 ->setReseller(false)
                 ->setServerHostname($this->configuration->hostname)
-                ->setMessage('Account reactivated successfully')
-                ->setDebug(['api_response' => $debugData]);
+                ->setMessage('Account reactivated successfully');
 
         } catch (ProvisionFunctionError $e) {
             throw $e;
@@ -535,7 +521,6 @@ class Provider extends Category implements ProviderInterface
             $response = $this->apiRequest('deleteWebsite', [
                 'domainName' => $this->getDomainForUser($username), // Get domain for the user
             ]);
-            $debugData = $this->sanitizeDataForLogging($response);
 
             // If API indicates not found/already deleted
             if (isset($response['error']) && $response['error'] === true) {
@@ -545,9 +530,7 @@ class Provider extends Category implements ProviderInterface
                 }
             }
 
-            return EmptyResult::create()
-                ->setMessage('Account deleted successfully')
-                ->setDebug(['api_response' => $debugData]);
+            return EmptyResult::create()->setMessage('Account deleted successfully');
 
         } catch (ProvisionFunctionError $e) {
             throw $e;
@@ -701,31 +684,6 @@ class Provider extends Category implements ProviderInterface
         }
 
         return $data;
-    }
-
-    /**
-     * Sanitize data for logging by removing sensitive information.
-     */
-    protected function sanitizeDataForLogging(array $data): array
-    {
-        // Comprehensive list of sensitive keys that should be redacted
-        $sensitiveKeys = [
-            // Password fields
-            'password', 'passwd', 'ownerPassword', 'newPassword', 'oldPassword',
-            // Admin credentials
-            'adminPass', 'adminPassword', 'adminUser', 'adminUsername',
-            // API keys and tokens
-            'token', 'secret', 'key', 'apiKey', 'apiSecret', 'accessToken',
-            // Authentication fields
-            'auth', 'credentials', 'login', 'passphrase',
-            // CyberPanel specific
-            'websiteOwner', 'userName', 'username', // These might contain sensitive info
-            // Other sensitive fields
-            'privateKey', 'publicKey', 'certificate', 'sslKey', 'sslCert'
-        ];
-
-        // Recursively sanitize nested arrays
-        return $this->recursiveSanitize($data, $sensitiveKeys);
     }
 
     /**
