@@ -687,39 +687,6 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * Recursively sanitize nested arrays for sensitive data.
-     */
-    protected function recursiveSanitize(array $data, array $sensitiveKeys): array
-    {
-        foreach ($data as $key => $value) {
-            // Check if key is sensitive (case-insensitive)
-            $isSensitive = false;
-            foreach ($sensitiveKeys as $sensitiveKey) {
-                if (strcasecmp($key, $sensitiveKey) === 0) {
-                    $isSensitive = true;
-                    break;
-                }
-            }
-
-            if ($isSensitive) {
-                // Redact sensitive values
-                if (is_string($value) && !empty($value)) {
-                    $data[$key] = '***REDACTED***';
-                } elseif (is_array($value)) {
-                    $data[$key] = '[REDACTED_ARRAY]';
-                } else {
-                    $data[$key] = '***REDACTED***';
-                }
-            } elseif (is_array($value)) {
-                // Recursively sanitize nested arrays
-                $data[$key] = $this->recursiveSanitize($value, $sensitiveKeys);
-            }
-        }
-
-        return $data;
-    }
-
-    /**
      * Generate a username from domain name.
      */
     protected function generateUsername(string $domain): string
