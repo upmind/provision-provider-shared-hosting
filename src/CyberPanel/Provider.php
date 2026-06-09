@@ -304,17 +304,12 @@ class Provider extends Category implements ProviderInterface
         try {
             // CyberPanel typically does not provide a user SSO token via public API.
             // Provide manual URL fallback.
-            $host = rtrim($this->configuration->hostname, '/');
-            $hasScheme = (bool) parse_url($host, PHP_URL_SCHEME);
-            $base = $hasScheme ? $host : ('https://' . $host);
-            $base = rtrim($base, '/');
-
-            if ($this->configuration->hasPort()) {
-                $base .= ':' . $this->configuration->getPort();
-            }
+            $url = $this->configuration->hasPort()
+                ? sprintf('https://%s:%s', $this->configuration->getHostname(), $this->configuration->getPort())
+                : sprintf('https://%s', $this->configuration->getHostname());
 
             return LoginUrl::create()
-                ->setLoginUrl(rtrim($base, '/') . '/')
+                ->setLoginUrl(rtrim($url, '/') . '/')
                 ->setForIp($params->user_ip)
                 ->setExpires(null)
                 ->setPostFields([
