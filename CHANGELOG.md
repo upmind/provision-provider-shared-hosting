@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.14.1](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.14.1) - 2026-07-17
+
+- Fix Plesk division by `0` when setting limit for resources. `0` is used when no resource is set for an account.
+
 ## [v6.14.0](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.14.0) - 2026-01-30
 
 - Add changePrimaryDomain() function
