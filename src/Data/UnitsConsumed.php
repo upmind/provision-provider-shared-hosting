@@ -62,6 +62,11 @@ class UnitsConsumed extends DataSet
             return $this;
         }
 
+        if ((float) $this->get('limit') === 0.0) {
+            $this->setUsedPc('100%'); // Forced to 100% for resource limits of 0
+            return $this;
+        }
+
         $this->setUsedPc(
             round($this->get('used') / $this->get('limit') * 100, 1) . '%'
         );
