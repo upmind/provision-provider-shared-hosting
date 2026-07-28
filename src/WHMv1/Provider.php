@@ -326,7 +326,8 @@ class Provider extends SharedHosting implements ProviderInterface
         $promises = [
             'accSummary' => $this->asyncApiCall('POST', 'accountsummary', ['user' => $username]),
             'bandwidth' => $this->asyncApiCall('POST', 'showbw', ['searchtype' => 'user', 'search' => $username]),
-            // 'domains' => $this->asyncApiCall('POST', 'get_domain_info', ['user' => $username]),
+            'domains' => $this->asyncUapiCall($username, 'DomainInfo', 'list_domains'),
+            'mailboxes' => $this->asyncUapiCall($username, 'Email', 'count_pops'),
         ];
 
         if ($isReseller = ($params->is_reseller ?? $this->userIsReseller($username))) {
@@ -344,9 +345,8 @@ class Provider extends SharedHosting implements ProviderInterface
             return Arr::get($responseData, 'acct.0');
         });
 
-        // $domains = $this->processResponse($responses['domains'], function ($responseData) {
-        //     return Arr::get($responseData, 'domains');
-        // });
+        $domains = (array) $this->processUapiResponse($responses['domains']);
+        $mailboxes = (int) $this->processUapiResponse($responses['mailboxes']);
 
         if ($isReseller) {
             $resellerInfo = $this->processResponse($responses['resellerInfo'], function ($responseData) {
@@ -359,7 +359,7 @@ class Provider extends SharedHosting implements ProviderInterface
         }
 
         return AccountUsage::create()
-            ->setUsageData($this->rawDataToUsageData($accSummary, $bandwidth))
+            ->setUsageData($this->rawDataToUsageData($accSummary, $bandwidth, $domains, $mailboxes))
             ->setResellerUsageData(
                 $isReseller ? $this->rawDataToResellerUsageData($resellerInfo, $resellerSubAccounts) : null
             );
@@ -842,10 +842,16 @@ class Provider extends SharedHosting implements ProviderInterface
     /**
      * @param array $accSummaryData Raw data from `accountsummary`
      * @param array $bandwidthData Raw data from `showbw`
+     * @param array|null $domainsData Raw data from UAPI `DomainInfo::list_domains`
+     * @param int|null $mailboxesUsed Raw data from UAPI `Email::count_pops`
      */
-    protected function rawDataToUsageData(array $accSummaryData, array $bandwidthData): UsageData
-    {
-        $diskUsedMb = round(rtrim($accSummaryData['diskused'] ?: '', 'M') ?: 0);
+    protected function rawDataToUsageData(
+        array $accSummaryData,
+        array $bandwidthData,
+        ?array $domainsData = null,
+        ?int $mailboxesUsed = null
+    ): UsageData {
+        $diskUsedMb = round((float) (rtrim($accSummaryData['diskused'] ?: '', 'M') ?: 0));
         $diskLimitMb = $accSummaryData['disklimit'] !== 'unlimited' ? rtrim($accSummaryData['disklimit'], 'M') : null;
         $diskPcUsed = is_numeric($diskLimitMb)
             ? round(($diskUsedMb) / $diskLimitMb * 100, 2) . '%'
@@ -863,7 +869,7 @@ class Provider extends SharedHosting implements ProviderInterface
             ? round(($inodesUsed ?: 0) / $inodesLimit * 100, 2) . '%'
             : null;
 
-        return new UsageData([
+        $usageData = [
             'disk_mb' => [
                 'used' => $diskUsedMb,
                 'limit' => $diskLimitMb,
@@ -879,7 +885,50 @@ class Provider extends SharedHosting implements ProviderInterface
                 'limit' => $inodesLimit,
                 'used_pc' => $inodesPcUsed,
             ],
-        ]);
+        ];
+
+        if ($domainsData !== null) {
+            $usageData['subdomains'] = $this->usageUnits(
+                count((array) Arr::get($domainsData, 'sub_domains', [])),
+                Arr::get($accSummaryData, 'maxsub')
+            );
+            $usageData['addon_domains'] = $this->usageUnits(
+                count((array) Arr::get($domainsData, 'addon_domains', [])),
+                Arr::get($accSummaryData, 'maxaddons')
+            );
+            $usageData['parked_domains'] = $this->usageUnits(
+                count((array) Arr::get($domainsData, 'parked_domains', [])),
+                Arr::get($accSummaryData, 'maxparked')
+            );
+        }
+
+        if ($mailboxesUsed !== null) {
+            $usageData['mailboxes'] = $this->usageUnits(
+                $mailboxesUsed,
+                Arr::get($accSummaryData, 'maxpop')
+            );
+        }
+
+        return new UsageData($usageData);
+    }
+
+    /**
+     * Convert a used count and a cPanel account limit into usage data.
+     *
+     * cPanel returns the string "unlimited" (and occasionally "*unknown*")
+     * when no numeric limit is available.
+     *
+     * @param mixed $rawLimit
+     */
+    protected function usageUnits(int $used, $rawLimit): array
+    {
+        $limit = is_numeric($rawLimit) ? (int) $rawLimit : null;
+
+        return [
+            'used' => $used,
+            'limit' => $limit,
+            'used_pc' => $limit > 0 ? round($used / $limit * 100, 2) . '%' : null,
+        ];
     }
 
     /**
@@ -1050,6 +1099,50 @@ class Provider extends SharedHosting implements ProviderInterface
 
             throw $e;
         });
+    }
+
+    /**
+     * Call a cPanel UAPI function through WHM API 1.
+     *
+     * @param array $params UAPI function params
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    protected function asyncUapiCall(
+        string $username,
+        string $module,
+        string $function,
+        array $params = []
+    ): PromiseInterface {
+        return $this->asyncApiCall('GET', 'uapi_cpanel', array_merge($params, [
+            'cpanel.user' => $username,
+            'cpanel.module' => $module,
+            'cpanel.function' => $function,
+        ]));
+    }
+
+    /**
+     * Process the nested result returned by WHM API 1's `uapi_cpanel` function.
+     *
+     * @return mixed
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    protected function processUapiResponse(Response $response)
+    {
+        $responseData = $this->processResponse($response);
+        $uapi = Arr::get($responseData, 'uapi');
+        $uapiResult = Arr::get($uapi, 'result', $uapi);
+
+        if (!is_array($uapiResult) || !Arr::get($uapiResult, 'status')) {
+            $errors = (array) Arr::get($uapiResult, 'errors', []);
+            $message = $errors ? implode(' ', $errors) : 'Unknown error';
+
+            $this->errorResult('UAPI Error: ' . $message, ['result_data' => $responseData]);
+        }
+
+        return Arr::get($uapiResult, 'data');
     }
 
     /**

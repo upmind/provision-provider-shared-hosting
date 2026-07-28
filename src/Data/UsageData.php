@@ -15,6 +15,9 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * @property-read UnitsConsumed|null $inodes Number of inodes used
  * @property-read UnitsConsumed|null $websites Number of websites used
  * @property-read UnitsConsumed|null $mailboxes Number of mailboxes used
+ * @property-read UnitsConsumed|null $subdomains Number of subdomains used
+ * @property-read UnitsConsumed|null $addon_domains Number of addon domains used
+ * @property-read UnitsConsumed|null $parked_domains Number of parked domains used
  */
 class UsageData extends DataSet
 {
@@ -26,6 +29,9 @@ class UsageData extends DataSet
             'inodes' => ['nullable', UnitsConsumed::class],
             'websites' => ['nullable', UnitsConsumed::class],
             'mailboxes' => ['nullable', UnitsConsumed::class],
+            'subdomains' => ['nullable', UnitsConsumed::class],
+            'addon_domains' => ['nullable', UnitsConsumed::class],
+            'parked_domains' => ['nullable', UnitsConsumed::class],
         ]);
     }
 
@@ -71,6 +77,33 @@ class UsageData extends DataSet
     public function setMailboxes($mailboxes): self
     {
         $this->setValue('mailboxes', $mailboxes);
+        return $this;
+    }
+
+    /**
+     * @param UnitsConsumed|array|null $subdomains
+     */
+    public function setSubdomains($subdomains): self
+    {
+        $this->setValue('subdomains', $subdomains);
+        return $this;
+    }
+
+    /**
+     * @param UnitsConsumed|array|null $addonDomains
+     */
+    public function setAddonDomains($addonDomains): self
+    {
+        $this->setValue('addon_domains', $addonDomains);
+        return $this;
+    }
+
+    /**
+     * @param UnitsConsumed|array|null $parkedDomains
+     */
+    public function setParkedDomains($parkedDomains): self
+    {
+        $this->setValue('parked_domains', $parkedDomains);
         return $this;
     }
 }
