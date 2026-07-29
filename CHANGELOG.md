@@ -2,6 +2,13 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.6.33](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.33) - 2026-07-29
+
+- Improve Enhance reseller support
+  - Use the org's whitelabel control panel domain, where one is configured, for getLoginUrl() URLs
+  - Return `reseller` in getInfo() results, based on whether the subscription is allowed customers
+  - Return reseller usage data, with the number of sub-accounts, in getUsage() results for reseller subscriptions
+
 ## [v6.6.32](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.32) - 2026-07-17
 
 - Fix Plesk division by `0` when setting limit for resources. `0` is used when no resource is set for an account.
