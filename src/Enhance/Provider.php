@@ -113,9 +113,9 @@ class Provider extends Category implements ProviderInterface
 
     public function create(CreateParams $params): AccountInfo
     {
-        try {
-            $customerCreated = false;
+        $customerCreated = false;
 
+        try {
             $plan = $this->findPlan($params->package_name);
 
             if ($params->location && !$this->configuration->create_subscription_only) {
@@ -150,14 +150,14 @@ class Provider extends Category implements ProviderInterface
                     $this->configuration->create_subscription_only ? 'Subscription' : 'Website'
                 ));
         } catch (Throwable $e) {
-            if ($customerCreated) {
+            if ($customerCreated && isset($customerId)) {
                 try {
-                    $this->api()->orgs()->deleteOrg($customerId, 'true');
-                } catch (Throwable $e) {
+                    $this->api()->orgs()->deleteOrg($customerId, 'false');
+                } catch (Throwable $deleteException) {
                     // ignore
                     $errorData = [
                         'customer_delete' => [
-                            'error' => $e->getMessage(),
+                            'error' => $deleteException->getMessage(),
                         ],
                     ];
                 }
@@ -843,8 +843,18 @@ class Provider extends Category implements ProviderInterface
                 ->createLogin($customerId, $newLogin)
                 ->getId();
         } catch (ApiException $e) {
+            $errorData = [
+                'new_customer_id' => $customerId,
+                'email' => $email,
+            ];
+
             try {
                 $this->api()->orgs()->deleteOrg($customerId, 'false');
+            } catch (Throwable $deleteException) {
+                // ignore
+                $errorData['customer_delete'] = [
+                    'error' => $deleteException->getMessage(),
+                ];
             } finally {
                 $errorMessage = 'Failed to create login for new customer';
 
@@ -859,7 +869,7 @@ class Provider extends Category implements ProviderInterface
 
                 throw $this->handleException(
                     $e,
-                    ['new_customer_id' => $customerId, 'email' => $email],
+                    $errorData,
                     [],
                     $errorMessage
                 );
