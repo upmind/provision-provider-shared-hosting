@@ -1182,7 +1182,7 @@ class Provider extends Category implements ProviderInterface
 
         $api = new Api($this->configuration);
         $api->setClient(new Client([
-            'handler' => $this->getGuzzleHandlerStack(true),
+            'handler' => $this->getGuzzleHandlerStack(boolval($this->configuration->debug)),
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->configuration->access_token,
             ],
