@@ -706,7 +706,8 @@ class Provider extends Category implements ProviderInterface
     {
         // @phpstan-ignore-next-line
         foreach ($subscription->getResources() ?? [] as $resource) {
-            if ((string) $resource->getName() === $name) {
+            // @phpstan-ignore-next-line
+            if ($resource->getName() === $name) {
                 return $resource;
             }
         }
@@ -1122,6 +1123,7 @@ class Provider extends Category implements ProviderInterface
                 continue; // guard against control panels which ignore the kind filter
             }
 
+            // @phpstan-ignore-next-line
             if ($domain = $website->getDomain()->getDomain()) {
                 return $domain;
             }
