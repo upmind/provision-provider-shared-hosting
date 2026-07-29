@@ -704,8 +704,9 @@ class Provider extends Category implements ProviderInterface
      */
     protected function findSubscriptionResource(Subscription $subscription, string $name): ?UsedResource
     {
+        // @phpstan-ignore-next-line
         foreach ($subscription->getResources() ?? [] as $resource) {
-            if ($resource->getName() === $name) {
+            if ((string) $resource->getName() === $name) {
                 return $resource;
             }
         }
@@ -720,6 +721,7 @@ class Provider extends Category implements ProviderInterface
      */
     protected function subscriptionHasAllowance(Subscription $subscription, string $allowanceName): bool
     {
+        // @phpstan-ignore-next-line
         foreach ($subscription->getAllowances() ?? [] as $allowance) {
             if ($allowance->getName() === $allowanceName) {
                 return true;
@@ -1114,6 +1116,7 @@ class Provider extends Category implements ProviderInterface
             'false'
         );
 
+        // @phpstan-ignore-next-line
         foreach ($result ? $result->getItems() : [] as $website) {
             if ($website->getKind() !== WebsiteKind::CONTROL_PANEL) {
                 continue; // guard against control panels which ignore the kind filter
