@@ -33,11 +33,13 @@ use Upmind\EnhanceSdk\Model\RoleInstallationState;
 use Upmind\EnhanceSdk\Model\ServerGroup;
 use Upmind\EnhanceSdk\Model\ServerIp;
 use Upmind\EnhanceSdk\Model\Status;
+use Upmind\EnhanceSdk\Model\Subscription;
 use Upmind\EnhanceSdk\Model\UpdateSubscription;
 use Upmind\EnhanceSdk\Model\UpdateWebsite;
 use Upmind\EnhanceSdk\Model\UsedResource;
 use Upmind\EnhanceSdk\Model\Website;
 use Upmind\EnhanceSdk\Model\WebsiteAppKind;
+use Upmind\EnhanceSdk\Model\WebsiteKind;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Helper;
 use Upmind\ProvisionBase\Provider\Contract\LogsDebugData;
@@ -56,11 +58,17 @@ use Upmind\ProvisionProviders\SharedHosting\Data\GetLoginUrlParams;
 use Upmind\ProvisionProviders\SharedHosting\Data\GrantResellerParams;
 use Upmind\ProvisionProviders\SharedHosting\Data\LoginUrl;
 use Upmind\ProvisionProviders\SharedHosting\Data\ResellerPrivileges;
+use Upmind\ProvisionProviders\SharedHosting\Data\ResellerUsageData;
 use Upmind\ProvisionProviders\SharedHosting\Data\SuspendParams;
 use Upmind\ProvisionProviders\SharedHosting\Enhance\Data\Configuration;
 
 class Provider extends Category implements ProviderInterface
 {
+    /**
+     * Subscription allowance name which grant's reseller capabilities.
+     */
+    protected const ALLOWANCE_RESELLER = 'allowReselling';
+
     /**
      * @var Configuration
      */
@@ -75,6 +83,13 @@ class Provider extends Category implements ProviderInterface
      * @var Api
      */
     protected $api;
+
+    /**
+     * Memoized hostname of the configured org's control panel.
+     *
+     * @var string|null
+     */
+    protected $controlPanelHostname;
 
     /**
      * Array containing the history of guzzle requests for this instance.
@@ -277,7 +292,8 @@ class Provider extends Category implements ProviderInterface
             $loginUrl = $this->getSsoUrl($customerId, $subscriptionId, $params->domain);
 
             return LoginUrl::create()
-                ->setLoginUrl($loginUrl);
+                ->setLoginUrl($loginUrl)
+                ->setDebug(['control_panel_hostname' => $this->getControlPanelHostname()]);
         } catch (Throwable $e) {
             throw $this->handleException($e);
         }
@@ -478,6 +494,7 @@ class Provider extends Category implements ProviderInterface
             ->setUsername($email ?? $this->findOwnerMember($customerId)->getEmail())
             ->setSubscriptionId($subscription->getId())
             ->setDomain($website ? $website->getDomain()->getDomain() : null)
+            ->setReseller($this->isResellerSubscription($subscription))
             ->setServerHostname($this->configuration->hostname)
             ->setPackageName($subscription->getPlanName())
             ->setSuspended(boolval($subscription->getSuspendedBy()))
@@ -579,9 +596,82 @@ class Provider extends Category implements ProviderInterface
             return $usage;
         }, []);
 
-        return new AccountUsage([
-            'usage_data' => $usage,
+        return AccountUsage::create()
+            ->setUsageData($usage)
+            ->setResellerUsageData($this->getResellerUsageData($subscription));
+    }
+
+    /**
+     * Build reseller usage data for the given subscription, or null if it isn't
+     * a reseller subscription.
+     *
+     * Only sub-account counts are reported. The other resources of a reseller
+     * subscription are not usage figures in the sense of `ResellerUsageData` -
+     * Enhance increments them by the quota *sold* to each customer subscription
+     * rather than by what those customers actually consume, and they are already
+     * returned as-is in the account usage data.
+     */
+    protected function getResellerUsageData(Subscription $subscription): ?ResellerUsageData
+    {
+        if (!$this->isResellerSubscription($subscription)) {
+            return null;
+        }
+
+        /** @var UsedResource $customers */
+        $customers = $this->findSubscriptionResource($subscription, ResourceName::CUSTOMERS);
+
+        $subAccountsUsed = $customers->getUsage();
+        $subAccountsLimit = $customers->getTotal();
+
+        return new ResellerUsageData([
+            'sub_accounts' => [
+                'used' => $subAccountsUsed,
+                'limit' => $subAccountsLimit,
+                'used_pc' => $subAccountsLimit
+                    ? round($subAccountsUsed / $subAccountsLimit * 100, 2) . '%'
+                    : null,
+            ],
         ]);
+    }
+
+    /**
+     * Determine whether the given subscription has reseller capabilities.
+     */
+    protected function isResellerSubscription(Subscription $subscription): bool
+    {
+        return $this->subscriptionHasAllowance($subscription, self::ALLOWANCE_RESELLER);
+    }
+
+    /**
+     * Find the named resource of the given subscription, if it has one.
+     *
+     * @param string $name One of `ResourceName`
+     */
+    protected function findSubscriptionResource(Subscription $subscription, string $name): ?UsedResource
+    {
+        foreach ($subscription->getResources() ?? [] as $resource) {
+            if ($resource->getName() === $name) {
+                return $resource;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Determine whether the given subscription has the named allowance.
+     *
+     * @param string $allowanceName E.g., "allowReselling"
+     */
+    protected function subscriptionHasAllowance(Subscription $subscription, string $allowanceName): bool
+    {
+        foreach ($subscription->getAllowances() ?? [] as $allowance) {
+            if ($allowance->getName() === $allowanceName) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected function findWebsite(
@@ -880,12 +970,97 @@ class Provider extends Category implements ProviderInterface
     {
         if (!$this->isEnhanceVersion('8.2.0')) {
             // feature not present / not working prior to v8.2.0 - just redirect them to the panel
-            return sprintf('https://%s/websites/%s', $this->configuration->hostname, $websiteId ?? null);
+            return sprintf('https://%s/websites/%s', $this->getControlPanelHostname(), $websiteId ?? null);
         }
 
         $url = $this->api()->members()->getOrgMemberLogin($customerId, $this->findOwnerMember($customerId)->getId());
 
-        return json_decode($url) ?? $url;
+        return $this->withControlPanelHostname(json_decode($url) ?? $url);
+    }
+
+    /**
+     * Hostname to use for control panel URLs.
+     *
+     * Because of Enhance's nested reseller model, the system control panel can be
+     * aliased with a custom whitelabel domain for a (sub-)reseller, in which case
+     * that domain should be used in preference to the configured system hostname.
+     */
+    protected function getControlPanelHostname(): string
+    {
+        if (isset($this->controlPanelHostname)) {
+            return $this->controlPanelHostname;
+        }
+
+        return $this->controlPanelHostname = $this->findControlPanelDomain() ?? $this->configuration->hostname;
+    }
+
+    /**
+     * Find the domain name of the configured org's control panel website, if any.
+     */
+    protected function findControlPanelDomain(): ?string
+    {
+        $result = $this->api()->websites()->getWebsites(
+            $this->configuration->org_id,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            WebsiteKind::CONTROL_PANEL,
+            'false'
+        );
+
+        foreach ($result ? $result->getItems() : [] as $website) {
+            if ($website->getKind() !== WebsiteKind::CONTROL_PANEL) {
+                continue; // guard against control panels which ignore the kind filter
+            }
+
+            if ($domain = $website->getDomain()->getDomain()) {
+                return $domain;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Swap the host of the given control panel URL for the org's control panel
+     * domain, leaving the rest of the URL intact.
+     */
+    protected function withControlPanelHostname(string $url): string
+    {
+        $hostname = $this->getControlPanelHostname();
+        $parts = parse_url($url);
+
+        if ($parts === false) {
+            return $url; // not a URL we can rewrite - leave it be
+        }
+
+        if (empty($parts['host'])) {
+            // relative url - simply prefix it with the control panel host
+            return sprintf('https://%s/%s', $hostname, ltrim($url, '/'));
+        }
+
+        if (strcasecmp($parts['host'], $hostname) === 0) {
+            return $url;
+        }
+
+        return sprintf(
+            '%s://%s%s%s%s%s',
+            $parts['scheme'] ?? 'https',
+            $hostname,
+            isset($parts['port']) ? ':' . $parts['port'] : '',
+            $parts['path'] ?? '',
+            isset($parts['query']) ? '?' . $parts['query'] : '',
+            isset($parts['fragment']) ? '#' . $parts['fragment'] : ''
+        );
     }
 
     protected function getWordpressLoginUrl(string $customerId, string $websiteId): string
@@ -1007,7 +1182,7 @@ class Provider extends Category implements ProviderInterface
 
         $api = new Api($this->configuration);
         $api->setClient(new Client([
-            'handler' => $this->getGuzzleHandlerStack(boolval($this->configuration->debug)),
+            'handler' => $this->getGuzzleHandlerStack(true),
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->configuration->access_token,
             ],
