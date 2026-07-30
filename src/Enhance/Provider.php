@@ -92,6 +92,13 @@ class Provider extends Category implements ProviderInterface
     protected $controlPanelHostname;
 
     /**
+     * Memoized flag indicating whether the configured org is the master org.
+     *
+     * @var bool|null
+     */
+    protected $isMasterOrg;
+
+    /**
      * Array containing the history of guzzle requests for this instance.
      *
      * @var array<Message[]>
@@ -152,7 +159,7 @@ class Provider extends Category implements ProviderInterface
         } catch (Throwable $e) {
             if ($customerCreated && isset($customerId)) {
                 try {
-                    $this->api()->orgs()->deleteOrg($customerId, 'false');
+                    $this->deleteCustomer($customerId);
                 } catch (Throwable $deleteException) {
                     // ignore
                     $errorData = [
@@ -413,8 +420,16 @@ class Provider extends Category implements ProviderInterface
             'version' => $this->api()->install()->orchdVersionAsync(),
         ];
 
+        if (!isset($this->isMasterOrg)) {
+            $requests['master_org'] = $this->api()->orgs()->getOrgAsync($this->configuration->org_id)
+                ->then(function ($org) {
+                    return $this->isMasterOrg($org);
+                });
+        }
+
         return PromiseUtils::all($requests)
             ->then(function ($meta) {
+                $meta['master_org'] ??= $this->isMasterOrg;
                 $this->meta = $meta;
                 return $meta;
             })
@@ -849,7 +864,7 @@ class Provider extends Category implements ProviderInterface
             ];
 
             try {
-                $this->api()->orgs()->deleteOrg($customerId, 'false');
+                $this->deleteCustomer($customerId);
             } catch (Throwable $deleteException) {
                 // ignore
                 $errorData['customer_delete'] = [
@@ -1161,6 +1176,41 @@ class Provider extends Category implements ProviderInterface
 
         return null;
     }
+
+    /**
+     * Delete a customer/org, forcing deletion if this is the master org.
+     *
+     * @param string $customerId The Enhance org uuid to delete
+     */
+    protected function deleteCustomer(string $customerId): void
+    {
+        $force = $this->isMasterOrg() ? 'true' : 'false';
+        $this->api()->orgs()->deleteOrg($customerId, $force);
+    }
+
+    /**
+     * Determine whether the configured org is the master org, rather than a reseller.
+     *
+     * Every org in Enhance's nested reseller model has a parent org, except the
+     * master org at the root of the tree.
+     */
+    protected function isMasterOrg(?\Upmind\EnhanceSdk\Model\Org $org = null): bool
+    {
+        if (is_null($org) && isset($this->isMasterOrg)) {
+            return $this->isMasterOrg;
+        }
+
+        $org ??= $this->api()->orgs()->getOrg($this->configuration->org_id);
+        $parentId = $org->getParentId();
+
+        $isMasterOrg = empty($parentId) || $parentId === $org->getId();
+        if ($org->getId() === $this->configuration->org_id) {
+            $this->isMasterOrg = $isMasterOrg;
+        }
+
+        return $isMasterOrg;
+    }
+
 
     /**
      * Returns a random password 15 chars long containing lower & uppercase alpha,
