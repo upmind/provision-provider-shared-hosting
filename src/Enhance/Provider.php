@@ -26,13 +26,16 @@ use Upmind\EnhanceSdk\Model\NewMember;
 use Upmind\EnhanceSdk\Model\NewSubscription;
 use Upmind\EnhanceSdk\Model\NewWebsite;
 use Upmind\EnhanceSdk\Model\Plan;
+use Upmind\EnhanceSdk\Model\PlanType;
 use Upmind\EnhanceSdk\Model\ResourceName;
 use Upmind\EnhanceSdk\Model\Role;
 use Upmind\EnhanceSdk\Model\RoleInstallationState;
 use Upmind\EnhanceSdk\Model\ServerGroup;
+use Upmind\EnhanceSdk\Model\ServerInfo;
 use Upmind\EnhanceSdk\Model\ServerIp;
 use Upmind\EnhanceSdk\Model\Status;
 use Upmind\EnhanceSdk\Model\Subscription;
+use Upmind\EnhanceSdk\Model\SubscriptionDedicatedServers;
 use Upmind\EnhanceSdk\Model\UpdateSubscription;
 use Upmind\EnhanceSdk\Model\UsedResource;
 use Upmind\EnhanceSdk\Model\Website;
@@ -89,6 +92,13 @@ class Provider extends Category implements ProviderInterface
     protected $controlPanelHostname;
 
     /**
+     * Memoized flag indicating whether the configured org is the master org.
+     *
+     * @var bool|null
+     */
+    protected $isMasterOrg;
+
+    /**
      * Array containing the history of guzzle requests for this instance.
      *
      * @var array<Message[]>
@@ -120,8 +130,25 @@ class Provider extends Category implements ProviderInterface
         try {
             $plan = $this->findPlan($params->package_name);
 
-            if ($params->location && !$this->configuration->create_subscription_only) {
-                $serverGroupId = $this->findServerGroup(trim($params->location))->getId();
+            $location = trim($params->location ?? '');
+            // @phpstan-ignore-next-line
+            if ($plan->getPlanType() === PlanType::DEDICATED || Str::startsWith($location, 'dedicated:')) {
+                if (empty($location)) {
+                    $this->errorResult("Location (server id or name) is required for dedicated plans");
+                }
+
+                $server = $this->findServer(Str::after($location, 'dedicated:'), true);
+                $dedicatedServerId = $server->getId();
+
+                if ($server->getDedicatedSubscription()) {
+                    $this->errorResult("Dedicated server already in use by an existing subscription", [
+                        'server_id' => $dedicatedServerId,
+                        'server_name' => $server->getFriendlyName(),
+                        'existing_subscription' => $server->getDedicatedSubscription()->jsonSerialize(),
+                    ]);
+                }
+            } elseif ($location && !$this->configuration->create_subscription_only) {
+                $serverGroupId = $this->findServerGroup($location)->getId();
             }
 
             if ($customerId = $params->customer_id) {
@@ -140,7 +167,7 @@ class Provider extends Category implements ProviderInterface
                 ? preg_replace('/^www\.(.+)/i', '$1', $params->domain)
                 : $params->domain;
 
-            $subscriptionId = $this->createSubscription($customerId, $plan->getId());
+            $subscriptionId = $this->createSubscription($customerId, $plan->getId(), $dedicatedServerId ?? null);
 
             if ($domain && !$this->configuration->create_subscription_only) {
                 $this->createWebsite($customerId, $subscriptionId, $domain, $serverGroupId ?? null);
@@ -154,7 +181,7 @@ class Provider extends Category implements ProviderInterface
         } catch (Throwable $e) {
             if ($customerCreated && isset($customerId)) {
                 try {
-                    $this->api()->orgs()->deleteOrg($customerId, 'false');
+                    $this->deleteCustomer($customerId);
                 } catch (Throwable $deleteException) {
                     // ignore
                     $errorData = [
@@ -453,8 +480,16 @@ class Provider extends Category implements ProviderInterface
             'version' => $this->api()->install()->orchdVersionAsync(),
         ];
 
+        if (!isset($this->isMasterOrg)) {
+            $requests['master_org'] = $this->api()->orgs()->getOrgAsync($this->configuration->org_id)
+                ->then(function ($org) {
+                    return $this->isMasterOrg($org);
+                });
+        }
+
         return PromiseUtils::all($requests)
             ->then(function ($meta) {
+                $meta['master_org'] ??= $this->isMasterOrg;
                 $this->meta = $meta;
                 return $meta;
             })
@@ -518,6 +553,12 @@ class Provider extends Category implements ProviderInterface
             $this->errorResult('Subscription terminated', ['subscription' => $subscription->jsonSerialize()]);
         }
 
+        if ($dedicatedServers = $subscription->getDedicatedServers()) {
+            if ($appServer = $dedicatedServers->getAppServer()) {
+                $location = $appServer->getName();
+            }
+        }
+
         if ($this->isEnhanceVersion('12.0.0')) {
             $nameservers = array_map(function ($ns) {
                 /** @var DomainIp|string $ns */
@@ -529,8 +570,8 @@ class Provider extends Category implements ProviderInterface
             $nameservers = [];
         }
 
-        if ($website) {
-            if ($serverGroup = $this->findServerGroupByWebsite($website)) {
+        if (empty($location) && isset($website)) {
+            if ($serverGroup = $this->findServerGroupByServerId($website->getAppServerId())) {
                 $location = $serverGroup->getName();
             }
         }
@@ -559,10 +600,11 @@ class Provider extends Category implements ProviderInterface
      *
      * @throws \Upmind\EnhanceSdk\ApiException
      * @throws \InvalidArgumentException
+     * @param string|null $serverId
      */
-    protected function findServerGroupByWebsite(Website $website): ?ServerGroup
+    protected function findServerGroupByServerId(?string $serverId): ?ServerGroup
     {
-        if (!$serverId = $website->getAppServerId()) {
+        if (!$serverId) {
             return null;
         }
 
@@ -927,7 +969,7 @@ class Provider extends Category implements ProviderInterface
             ];
 
             try {
-                $this->api()->orgs()->deleteOrg($customerId, 'false');
+                $this->deleteCustomer($customerId);
             } catch (Throwable $deleteException) {
                 // ignore
                 $errorData['customer_delete'] = [
@@ -971,10 +1013,19 @@ class Provider extends Category implements ProviderInterface
      * @throws \Upmind\EnhanceSdk\ApiException
      * @throws \InvalidArgumentException
      */
-    protected function createSubscription(string $customerId, int $planId): int
+    protected function createSubscription(string $customerId, int $planId, ?string $dedicatedServerId = null): int
     {
         $newSubscription = (new NewSubscription())
             ->setPlanId($planId);
+
+        if ($dedicatedServerId) {
+            $newSubscription->setDedicatedServers(new SubscriptionDedicatedServers([
+                'app_server_id' => $dedicatedServerId,
+                'db_server_id' => $dedicatedServerId,
+                'postgresql_server_id' => $dedicatedServerId,
+                'email_server_id' => $dedicatedServerId,
+            ]));
+        }
 
         return $this->api()->subscriptions()
             ->createCustomerSubscription($this->configuration->org_id, $customerId, $newSubscription)
@@ -1226,6 +1277,42 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
+     * Find a server by name or id.
+     *
+     * @param string $server Server name or id
+     * @param bool $orFail Whether or not to throw an exception upon failure
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    protected function findServer(string $server, bool $orFail = true): ?ServerInfo
+    {
+        if ($this->isUuid($server)) {
+            return $this->api()->servers()->getServerInfo($server);
+        }
+
+        $offset = 0;
+        $limit = 50;
+
+        do {
+            $servers = $this->api()->servers()->getServers($offset, $limit);
+            $offset += $limit;
+
+            // @phpstan-ignore-next-line
+            foreach ($servers->getItems() ?? [] as $serverItem) {
+                if (strtolower($serverItem->getFriendlyName()) === strtolower($server)) {
+                    return $this->api()->servers()->getServerInfo($serverItem->getId());
+                }
+            }
+        } while ($offset <= $servers->getTotal());
+
+        if ($orFail) {
+            throw $this->errorResult(sprintf('Server "%s" not found', $server));
+        }
+
+        return null;
+    }
+
+    /**
      * @param string $location Server group name or id
      * @param bool $orFail Whether or not to throw an exception upon failure
      *
@@ -1275,6 +1362,41 @@ class Provider extends Category implements ProviderInterface
 
         return null;
     }
+
+    /**
+     * Delete a customer/org, forcing deletion if this is the master org.
+     *
+     * @param string $customerId The Enhance org uuid to delete
+     */
+    protected function deleteCustomer(string $customerId): void
+    {
+        $force = $this->isMasterOrg() ? 'true' : 'false';
+        $this->api()->orgs()->deleteOrg($customerId, $force);
+    }
+
+    /**
+     * Determine whether the configured org is the master org, rather than a reseller.
+     *
+     * Every org in Enhance's nested reseller model has a parent org, except the
+     * master org at the root of the tree.
+     */
+    protected function isMasterOrg(?\Upmind\EnhanceSdk\Model\Org $org = null): bool
+    {
+        if (is_null($org) && isset($this->isMasterOrg)) {
+            return $this->isMasterOrg;
+        }
+
+        $org ??= $this->api()->orgs()->getOrg($this->configuration->org_id);
+        $parentId = $org->getParentId();
+
+        $isMasterOrg = empty($parentId) || $parentId === $org->getId();
+        if ($org->getId() === $this->configuration->org_id) {
+            $this->isMasterOrg = $isMasterOrg;
+        }
+
+        return $isMasterOrg;
+    }
+
 
     /**
      * Returns a random password 15 chars long containing lower & uppercase alpha,
