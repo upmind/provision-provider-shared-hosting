@@ -282,8 +282,7 @@ class Provider extends Category implements ProviderInterface
             return $this->getSubscriptionUsage(
                 $customerId,
                 $subscriptionId,
-                $params->domain,
-                $params->username
+                $params->domain
             );
         } catch (Throwable $e) {
             throw $this->handleException($e);
