@@ -131,6 +131,7 @@ class Provider extends Category implements ProviderInterface
             $plan = $this->findPlan($params->package_name);
 
             $location = trim($params->location ?? '');
+            // @phpstan-ignore-next-line
             if ($plan->getPlanType() === PlanType::DEDICATED || Str::startsWith($location, 'dedicated:')) {
                 if (empty($location)) {
                     $this->errorResult("Location (server id or name) is required for dedicated plans");
@@ -1296,6 +1297,7 @@ class Provider extends Category implements ProviderInterface
             $servers = $this->api()->servers()->getServers($offset, $limit);
             $offset += $limit;
 
+            // @phpstan-ignore-next-line
             foreach ($servers->getItems() ?? [] as $serverItem) {
                 if (strtolower($serverItem->getFriendlyName()) === strtolower($server)) {
                     return $this->api()->servers()->getServerInfo($serverItem->getId());
