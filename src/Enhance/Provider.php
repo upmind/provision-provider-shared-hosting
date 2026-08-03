@@ -1357,10 +1357,9 @@ class Provider extends Category implements ProviderInterface
         // Get the available groups and check the given one exist
         $groups = $this->api()->servers()->getServerGroups();
 
-        /** @var ServerGroup $validGroup */
         foreach ($groups->getItems() ?? [] as $group) {
+            /** @var ServerGroup $group */
             if ($group->getId() === $groupName || strtolower($group->getName()) === strtolower($groupName)) {
-                /** @var ServerGroup $validGroup */
                 return $group;
             }
         }
@@ -1394,6 +1393,7 @@ class Provider extends Category implements ProviderInterface
                     continue; // server not an application server
                 }
 
+                // @phpstan-ignore-next-line
                 return; // all good
             }
 
