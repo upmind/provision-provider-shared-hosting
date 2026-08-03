@@ -2,6 +2,12 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.15.1](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.15.1) - 2026-08-03
+
+- Enhance `location` handling improvements
+  - Add optional configuration setting `dedicated_server_group` to ensure dedicated subscriptions can only be created on designated servers
+  - Improve error messages for reseller orgs when attempting to use `location` param for server group placement
+
 ## [v6.15.0](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.15.0) - 2026-07-29
 
 - Improve Enhance reseller support
