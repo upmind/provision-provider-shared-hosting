@@ -133,6 +133,7 @@ class Provider extends Category implements ProviderInterface
             $location = trim($params->location ?? '');
             // @phpstan-ignore-next-line
             if ($plan->getPlanType() === PlanType::DEDICATED || Str::startsWith($location, 'dedicated:')) {
+                // Find server for subscription placement
                 if (empty($location)) {
                     $this->errorResult("Location (server id or name) is required for dedicated plans");
                 }
@@ -140,6 +141,28 @@ class Provider extends Category implements ProviderInterface
                 $server = $this->findServer(Str::after($location, 'dedicated:'), true);
                 $dedicatedServerId = $server->getId();
 
+                // Check that the server is in the configured dedicated server group, if set
+                if ($this->configuration->dedicated_server_group) {
+                    $dedicatedGroup = $this->findServerGroup($this->configuration->dedicated_server_group, false);
+
+                    if (!$dedicatedGroup) {
+                        $this->errorResult("Dedicated server group not found", [
+                            'dedicated_server_group' => $this->configuration->dedicated_server_group,
+                        ]);
+                    }
+
+                    if ($server->getGroupId() !== $dedicatedGroup->getId()) {
+                        $this->errorResult("Server is not in the configured dedicated server group", [
+                            'server_id' => $dedicatedServerId,
+                            'server_name' => $server->getFriendlyName(),
+                            'server_group_id' => $server->getGroupId(),
+                            'dedicated_server_group_id' => $dedicatedGroup->getId(),
+                            'dedicated_server_group_name' => $dedicatedGroup->getName(),
+                        ]);
+                    }
+                }
+
+                // Check the server is not already in use by an existing subscription
                 if ($server->getDedicatedSubscription()) {
                     $this->errorResult("Dedicated server already in use by an existing subscription", [
                         'server_id' => $dedicatedServerId,
@@ -148,7 +171,16 @@ class Provider extends Category implements ProviderInterface
                     ]);
                 }
             } elseif ($location && !$this->configuration->create_subscription_only) {
-                $serverGroupId = $this->findServerGroup($location)->getId();
+                if (!$this->isMasterOrg()) {
+                    // Pre-check here to prevent ugly 403 error from Enhance API below
+                    $this->errorResult("Location (server group) unavailable for reseller orgs");
+                }
+
+                // Find server group for website placement
+                $serverGroup = $this->findServerGroup($location);
+                $this->assertGroupHasApplicationServer($serverGroup);
+
+                $serverGroupId = $serverGroup->getId();
             }
 
             if ($customerId = $params->customer_id) {
@@ -1303,7 +1335,7 @@ class Provider extends Category implements ProviderInterface
                     return $this->api()->servers()->getServerInfo($serverItem->getId());
                 }
             }
-        } while ($offset <= $servers->getTotal());
+        } while ($offset < $servers->getTotal());
 
         if ($orFail) {
             throw $this->errorResult(sprintf('Server "%s" not found', $server));
@@ -1313,54 +1345,62 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @param string $location Server group name or id
+     * @param string $groupName Server group name or id
      * @param bool $orFail Whether or not to throw an exception upon failure
      *
      * @throws \Upmind\EnhanceSdk\ApiException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \InvalidArgumentException
      */
-    protected function findServerGroup(string $location, bool $orFail = true): ?ServerGroup
+    protected function findServerGroup(string $groupName, bool $orFail = true): ?ServerGroup
     {
         // Get the available groups and check the given one exist
         $groups = $this->api()->servers()->getServerGroups();
 
-        $validGroup = null;
+        /** @var ServerGroup $validGroup */
         foreach ($groups->getItems() ?? [] as $group) {
-            if ($group->getId() === $location || strtolower($group->getName()) === strtolower($location)) {
+            if ($group->getId() === $groupName || strtolower($group->getName()) === strtolower($groupName)) {
                 /** @var ServerGroup $validGroup */
-                $validGroup = $group;
-                break;
+                return $group;
             }
-        }
-
-        if ($validGroup === null) {
-            if ($orFail) {
-                $this->errorResult(sprintf('Server group "%s" not found', $location));
-            }
-
-            return null;
-        }
-
-        // Check the server group has at least one application server assigned
-        $servers = $this->api()->servers()->getServers();
-        foreach ($servers->getItems() as $server) {
-            if ($server->getGroupId() !== $validGroup->getId()) {
-                continue; // server not in group
-            }
-
-            if ($server->getRoles()->getApplication() != RoleInstallationState::ENABLED) {
-                continue; // server not an application server
-            }
-
-            return $validGroup;
         }
 
         if ($orFail) {
-            $this->errorResult(sprintf('Server group %s has no application servers', $location));
+            throw $this->errorResult(sprintf('Server group "%s" not found', $groupName));
         }
 
         return null;
+    }
+
+    /**
+     * Assert the given ServerGroup has at least one available application server.
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError If group has no application servers
+     * @throws \Upmind\EnhanceSdk\ApiException
+     */
+    protected function assertGroupHasApplicationServer(ServerGroup $group): void
+    {
+        $offset = 0;
+        $limit = 50;
+
+        do {
+            $servers = $this->api()->servers()->getServers($offset, $limit);
+            foreach ($servers->getItems() as $server) {
+                if ($server->getGroupId() !== $group->getId()) {
+                    continue; // server not in group
+                }
+
+                if ($server->getRoles()->getApplication() !== RoleInstallationState::ENABLED) {
+                    continue; // server not an application server
+                }
+
+                return; // all good
+            }
+
+            $offset += $limit;
+        } while ($offset < $servers->getTotal());
+
+        $this->errorResult(sprintf('Server group %s has no application servers', $group->getName()));
     }
 
     /**
