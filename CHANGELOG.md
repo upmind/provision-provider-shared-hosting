@@ -2,6 +2,12 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.16.0](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.16.0) - 2026-08-13
+
+- Add optional `service_identifier` to AccountInfo
+  - Update Enhance to return dedicated server hostname as `service_identifier`, otherwise subscription domain
+- Update Enhance login hostname to use customer's own CP domain if any so resellers log in to their own CP domain
+
 ## [v6.15.1](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.15.1) - 2026-08-03
 
 - Enhance `location` handling improvements
