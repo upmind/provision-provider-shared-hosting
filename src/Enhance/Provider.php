@@ -87,7 +87,7 @@ class Provider extends Category implements ProviderInterface
     /**
      * Memoized hostname of the configured org's control panel.
      *
-     * @var string|null
+     * @var string|false
      */
     protected $controlPanelHostname;
 
@@ -379,7 +379,7 @@ class Provider extends Category implements ProviderInterface
 
             return LoginUrl::create()
                 ->setLoginUrl($loginUrl)
-                ->setDebug(['control_panel_hostname' => $this->getControlPanelHostname()]);
+                ->setDebug(['control_panel_hostname' => $this->getControlPanelHostname($customerId)]);
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -1163,37 +1163,39 @@ class Provider extends Category implements ProviderInterface
     {
         if (!$this->isEnhanceVersion('8.2.0')) {
             // feature not present / not working prior to v8.2.0 - just redirect them to the panel
-            return sprintf('https://%s/websites/%s', $this->getControlPanelHostname(), $websiteId ?? null);
+            return sprintf(
+                'https://%s/websites/%s',
+                $this->getControlPanelHostname($customerId)
+                    ?? $this->configuration->hostname,
+                $websiteId ?? null
+            );
         }
 
         $url = $this->api()->members()->getOrgMemberLogin($customerId, $this->findOwnerMember($customerId)->getId());
 
-        return $this->withControlPanelHostname(json_decode($url) ?? $url);
+        return $this->withControlPanelHostname($customerId, json_decode($url) ?? $url);
     }
 
     /**
-     * Hostname to use for control panel URLs.
-     *
-     * Because of Enhance's nested reseller model, the system control panel can be
-     * aliased with a custom whitelabel domain for a (sub-)reseller, in which case
-     * that domain should be used in preference to the configured system hostname.
+     * Hostname to use for control panel URLs, if the org has one.
      */
-    protected function getControlPanelHostname(): string
+    protected function getControlPanelHostname(string $orgId): ?string
     {
         if (isset($this->controlPanelHostname)) {
-            return $this->controlPanelHostname;
+            return $this->controlPanelHostname ?: null;
         }
 
-        return $this->controlPanelHostname = $this->findControlPanelDomain() ?? $this->configuration->hostname;
+        $this->controlPanelHostname = $this->findControlPanelDomain($orgId) ?? false;
+        return $this->controlPanelHostname ?: null;
     }
 
     /**
-     * Find the domain name of the configured org's control panel website, if any.
+     * Find the domain name of the given org's control panel website, if any.
      */
-    protected function findControlPanelDomain(): ?string
+    protected function findControlPanelDomain(string $orgId): ?string
     {
         $result = $this->api()->websites()->getWebsites(
-            $this->configuration->org_id,
+            $orgId,
             null,
             null,
             null,
@@ -1229,12 +1231,12 @@ class Provider extends Category implements ProviderInterface
      * Swap the host of the given control panel URL for the org's control panel
      * domain, leaving the rest of the URL intact.
      */
-    protected function withControlPanelHostname(string $url): string
+    protected function withControlPanelHostname(string $orgId, string $url): string
     {
-        $hostname = $this->getControlPanelHostname();
+        $hostname = $this->getControlPanelHostname($orgId);
         $parts = parse_url($url);
 
-        if ($parts === false) {
+        if ($parts === false || $hostname === null) {
             return $url; // not a URL we can rewrite - leave it be
         }
 
