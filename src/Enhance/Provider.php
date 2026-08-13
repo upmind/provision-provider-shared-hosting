@@ -87,7 +87,7 @@ class Provider extends Category implements ProviderInterface
     /**
      * Memoized hostname of the configured org's control panel.
      *
-     * @var string|false
+     * @var string|false|null
      */
     protected $controlPanelHostname;
 
