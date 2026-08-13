@@ -588,6 +588,8 @@ class Provider extends Category implements ProviderInterface
         if ($dedicatedServers = $subscription->getDedicatedServers()) {
             if ($appServer = $dedicatedServers->getAppServer()) {
                 $location = $appServer->getName();
+                $serviceIdentifier = $this->findServer($appServer->getId())->getHostname()
+                    ?: $appServer->getName();
             }
         }
 
@@ -608,12 +610,15 @@ class Provider extends Category implements ProviderInterface
             }
         }
 
+        $domain = $website ? $website->getDomain()->getDomain() : null;
+
         return AccountInfo::create()
             ->setMessage('Subscription info obtained')
             ->setCustomerId($customerId)
             ->setUsername($email ?? $this->findOwnerMember($customerId)->getEmail())
             ->setSubscriptionId($subscription->getId())
-            ->setDomain($website ? $website->getDomain()->getDomain() : null)
+            ->setDomain($domain)
+            ->setServiceIdentifier($serviceIdentifier ?? $domain)
             ->setReseller($this->isResellerSubscription($subscription))
             ->setServerHostname($this->configuration->hostname)
             ->setPackageName($subscription->getPlanName())
