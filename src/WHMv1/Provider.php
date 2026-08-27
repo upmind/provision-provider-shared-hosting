@@ -888,15 +888,19 @@ class Provider extends SharedHosting implements ProviderInterface
         ];
 
         if ($domainsData !== null) {
+            $addonDomainsUsed = count((array) Arr::get($domainsData, 'addon_domains', []));
+            $hasMainDomain = !empty(Arr::get($domainsData, 'main_domain'));
+            $maxAddonDomains = Arr::get($accSummaryData, 'maxaddons');
+
+            $usageData['websites'] = $this->usageUnits(
+                $addonDomainsUsed + (int) $hasMainDomain,
+                is_numeric($maxAddonDomains) ? (int) $maxAddonDomains + 1 : $maxAddonDomains
+            );
             $usageData['subdomains'] = $this->usageUnits(
                 count((array) Arr::get($domainsData, 'sub_domains', [])),
                 Arr::get($accSummaryData, 'maxsub')
             );
-            $usageData['addon_domains'] = $this->usageUnits(
-                count((array) Arr::get($domainsData, 'addon_domains', [])),
-                Arr::get($accSummaryData, 'maxaddons')
-            );
-            $usageData['parked_domains'] = $this->usageUnits(
+            $usageData['domain_aliases'] = $this->usageUnits(
                 count((array) Arr::get($domainsData, 'parked_domains', [])),
                 Arr::get($accSummaryData, 'maxparked')
             );

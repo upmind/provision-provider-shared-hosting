@@ -16,8 +16,7 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * @property-read UnitsConsumed|null $websites Number of websites used
  * @property-read UnitsConsumed|null $mailboxes Number of mailboxes used
  * @property-read UnitsConsumed|null $subdomains Number of subdomains used
- * @property-read UnitsConsumed|null $addon_domains Number of addon domains used
- * @property-read UnitsConsumed|null $parked_domains Number of parked domains used
+ * @property-read UnitsConsumed|null $domain_aliases Number of domain aliases used
  */
 class UsageData extends DataSet
 {
@@ -30,8 +29,7 @@ class UsageData extends DataSet
             'websites' => ['nullable', UnitsConsumed::class],
             'mailboxes' => ['nullable', UnitsConsumed::class],
             'subdomains' => ['nullable', UnitsConsumed::class],
-            'addon_domains' => ['nullable', UnitsConsumed::class],
-            'parked_domains' => ['nullable', UnitsConsumed::class],
+            'domain_aliases' => ['nullable', UnitsConsumed::class],
         ]);
     }
 
@@ -90,20 +88,11 @@ class UsageData extends DataSet
     }
 
     /**
-     * @param UnitsConsumed|array|null $addonDomains
+     * @param UnitsConsumed|array|null $domainAliases
      */
-    public function setAddonDomains($addonDomains): self
+    public function setDomainAliases($domainAliases): self
     {
-        $this->setValue('addon_domains', $addonDomains);
-        return $this;
-    }
-
-    /**
-     * @param UnitsConsumed|array|null $parkedDomains
-     */
-    public function setParkedDomains($parkedDomains): self
-    {
-        $this->setValue('parked_domains', $parkedDomains);
+        $this->setValue('domain_aliases', $domainAliases);
         return $this;
     }
 }
