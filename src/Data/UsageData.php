@@ -15,6 +15,8 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * @property-read UnitsConsumed|null $inodes Number of inodes used
  * @property-read UnitsConsumed|null $websites Number of websites used
  * @property-read UnitsConsumed|null $mailboxes Number of mailboxes used
+ * @property-read UnitsConsumed|null $subdomains Number of subdomains used
+ * @property-read UnitsConsumed|null $domain_aliases Number of domain aliases used
  */
 class UsageData extends DataSet
 {
@@ -26,6 +28,8 @@ class UsageData extends DataSet
             'inodes' => ['nullable', UnitsConsumed::class],
             'websites' => ['nullable', UnitsConsumed::class],
             'mailboxes' => ['nullable', UnitsConsumed::class],
+            'subdomains' => ['nullable', UnitsConsumed::class],
+            'domain_aliases' => ['nullable', UnitsConsumed::class],
         ]);
     }
 
@@ -71,6 +75,24 @@ class UsageData extends DataSet
     public function setMailboxes($mailboxes): self
     {
         $this->setValue('mailboxes', $mailboxes);
+        return $this;
+    }
+
+    /**
+     * @param UnitsConsumed|array|null $subdomains
+     */
+    public function setSubdomains($subdomains): self
+    {
+        $this->setValue('subdomains', $subdomains);
+        return $this;
+    }
+
+    /**
+     * @param UnitsConsumed|array|null $domainAliases
+     */
+    public function setDomainAliases($domainAliases): self
+    {
+        $this->setValue('domain_aliases', $domainAliases);
         return $this;
     }
 }
