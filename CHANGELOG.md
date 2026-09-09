@@ -2,6 +2,11 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.6.36](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.36) - 2026-09-09
+
+- Add subdomains and domain_aliases to UsageData
+- Add more UsageData metrics for cPanel including websites, subdomains, domain_aliases, and mailboxes
+
 ## [v6.6.35](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.35) - 2026-08-13
 
 - Add optional `service_identifier` to AccountInfo
