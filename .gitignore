@@ -1,4 +1,23 @@
-vendor
+# Composer
 composer.lock
-.vscode/launch.json
+vendor/
+
+# Tools
 .php-cs-fixer.cache
+phpunit.xml
+phpstan.neon
+.phpunit.result.cache
+.phpunit.cache/
+
+# Docker
+.docker/Dockerfile
+docker-compose.yml
+
+# IDE
+.vscode/
+.idea/
+.vscode/launch.json
+
+# System
+.DS_Store
+error_log

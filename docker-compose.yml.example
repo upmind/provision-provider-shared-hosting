@@ -1,0 +1,23 @@
+version: '3.3'
+services:
+
+  #PHP Service
+  provision-provider-shared-hosting:
+    build:
+      context: .
+      dockerfile: ./.docker/Dockerfile
+    container_name: provision-provider-shared-hosting
+    tty: true
+    environment:
+      SERVICE_NAME: provision-provider-shared-hosting
+      SERVICE_TAGS: dev
+    working_dir: /usr/src/lib
+    volumes:
+      - ./:/usr/src/lib
+    networks:
+      - provision-provider-shared-hosting-network
+
+#Docker Networks
+networks:
+  provision-provider-shared-hosting-network:
+    driver: bridge
