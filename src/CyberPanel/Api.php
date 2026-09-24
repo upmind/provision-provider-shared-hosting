@@ -162,12 +162,24 @@ class Api
     {
         $response = $this->makeRequest('listPackage');
 
-        $packages = $response['listPackages'] ?? [];
+        // A successful response is a bare JSON array of package name strings.
+        // Only failure responses are objects, carrying a status flag/message.
+        if (isset($response['status']) && (int)$response['status'] !== 1) {
+            throw ProvisionFunctionError::create('Failed to retrieve the package list')
+                ->withData(['error' => $response['error_message'] ?? null]);
+        }
 
-        // CyberPanel returns this as a JSON-encoded string.
+        // Bare array (self-hosted), or wrapped under 'listPackages' on some versions.
+        $packages = $response['listPackages'] ?? $response;
+
+        // Some versions return the list as a JSON-encoded string.
         if (is_string($packages)) {
             $decoded = json_decode($packages, true);
             $packages = is_array($decoded) ? $decoded : [];
+        }
+
+        if (!is_array($packages)) {
+            return [];
         }
 
         return array_values(array_filter(array_map(
