@@ -315,13 +315,8 @@ class Provider extends Category implements ProviderInterface
         return substr(
             preg_replace('/^[^a-z]+/', '', preg_replace('/[^a-z0-9]/', '', strtolower($base))),
             0,
-            $this->getMaxUsernameLength() - 2
+            self::MAX_USERNAME_LENGTH - 2
         ) . random_int(1, 99);
-    }
-
-    protected function getMaxUsernameLength(): int
-    {
-        return 8;
     }
 
     protected function api(): Api
