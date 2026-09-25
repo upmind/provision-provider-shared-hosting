@@ -355,7 +355,7 @@ class ProviderTest extends CyberPanelTestCase
 
     // terminate
 
-    public function testTerminate(): void
+    public function testTerminateWithDomainDeletesWebsiteOnly(): void
     {
         $this->queueJson(['websiteDeleteStatus' => 1]);
 
@@ -366,10 +366,10 @@ class ProviderTest extends CyberPanelTestCase
 
         $this->assertSame(['deleteWebsite'], $this->calledFunctions());
         $this->assertSame('example.com', $this->requestPayload(0)['domainName']);
-        $this->assertSame('Account deleted', $result->getMessage());
+        $this->assertSame('Website deleted', $result->getMessage());
     }
 
-    public function testTerminateFailure(): void
+    public function testTerminateWithDomainFailure(): void
     {
         $this->queueJson(['websiteDeleteStatus' => 0, 'error_message' => 'Website not found']);
 
@@ -377,6 +377,33 @@ class ProviderTest extends CyberPanelTestCase
             $this->makeProvider()->terminate(AccountUsername::create([
                 'username' => 'bob',
                 'domain' => 'example.com',
+            ], false));
+        });
+
+        $this->assertSame('Failed to delete website', $error->getMessage());
+    }
+
+    public function testTerminateWithoutDomainDeletesAccount(): void
+    {
+        $this->queueJson(['status' => 1, 'deleteStatus' => 1]);
+
+        $result = $this->makeProvider()->terminate(AccountUsername::create([
+            'username' => 'bob',
+        ], false));
+
+        $this->assertSame(['submitUserDeletion'], $this->calledFunctions());
+        $this->assertSame('bob', $this->requestPayload(0)['accountUsername']);
+        $this->assertSame(1, $this->requestPayload(0)['force']);
+        $this->assertSame('Account deleted', $result->getMessage());
+    }
+
+    public function testTerminateWithoutDomainFailure(): void
+    {
+        $this->queueJson(['status' => 0, 'deleteStatus' => 0, 'error_message' => 'Not enough privileges.']);
+
+        $error = $this->catchProvisionError(function () {
+            $this->makeProvider()->terminate(AccountUsername::create([
+                'username' => 'bob',
             ], false));
         });
 
@@ -407,7 +434,6 @@ class ProviderTest extends CyberPanelTestCase
         return [
             'suspend' => ['suspend', SuspendParams::class],
             'unSuspend' => ['unSuspend', AccountUsername::class],
-            'terminate' => ['terminate', AccountUsername::class],
         ];
     }
 

@@ -260,9 +260,15 @@ class Provider extends Category implements ProviderInterface
      */
     public function terminate(AccountUsername $params): EmptyResult
     {
-        $domain = $this->requireDomain($params->domain);
+        // As with Plesk: given a domain, delete just that website; otherwise
+        // delete the user account together with all its websites.
+        if ($params->domain) {
+            $this->api()->deleteWebsite($params->domain);
 
-        $this->api()->deleteAccount($domain);
+            return EmptyResult::create()->setMessage('Website deleted');
+        }
+
+        $this->api()->deleteAccount($params->username);
 
         return EmptyResult::create()->setMessage('Account deleted');
     }
