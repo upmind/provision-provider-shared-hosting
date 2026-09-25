@@ -17,7 +17,7 @@ CyberPanel identifies hosting accounts by their domain name, so functions marked
 | changePrimaryDomain() | No | |
 | suspend() | Yes | Requires the domain |
 | unSuspend() | Yes | Requires the domain |
-| terminate() | Yes | Requires the domain |
+| terminate() | Yes | If a domain is given, deletes only that website and keeps the user account. Without a domain, deletes the user account together with its website(s) and any users it owns |
 | grantReseller() | No | The API does not manage reseller privileges |
 | revokeReseller() | No | The API does not manage reseller privileges |
 

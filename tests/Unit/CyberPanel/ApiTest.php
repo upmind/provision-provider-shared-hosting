@@ -366,12 +366,20 @@ class ApiTest extends CyberPanelTestCase
                 'websiteStatus',
                 'Failed to update account status',
             ],
-            'deleteAccount' => [
-                'deleteAccount',
+            'deleteWebsite' => [
+                'deleteWebsite',
                 ['example.com'],
                 'deleteWebsite',
                 ['domainName' => 'example.com'],
                 'websiteDeleteStatus',
+                'Failed to delete website',
+            ],
+            'deleteAccount' => [
+                'deleteAccount',
+                ['bob'],
+                'submitUserDeletion',
+                ['accountUsername' => 'bob', 'force' => 1],
+                'deleteStatus',
                 'Failed to delete hosting account',
             ],
         ];
