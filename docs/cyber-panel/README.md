@@ -28,6 +28,25 @@ CyberPanel rejects API requests unless API access is enabled for the account who
 
    ![Configure API Access page with API access enabled](img/api-access-003.png)
 
+## Functions
+
+CyberPanel identifies hosting accounts by their domain name, so functions marked below need the account's domain as well as its username.
+
+| Function | Supported | Notes |
+|---|---|---|
+| create() | Yes | A username and password are generated if not provided. The package must exist (see [Packages](#packages)) |
+| getInfo() | Partially | Only confirms the account exists. The API does not report the package or suspension state, so defaults are returned |
+| getUsage() | No | The API does not report per-account resource usage |
+| getLoginUrl() | Partially | CyberPanel has no single sign-on, so this returns the panel URL with the account's credentials for a manual login. If no current password is provided, the account's password is changed to a random one first |
+| changePassword() | Yes | |
+| changePackage() | Yes | Requires the domain. The package must exist (see [Packages](#packages)) |
+| changePrimaryDomain() | No | |
+| suspend() | Yes | Requires the domain |
+| unSuspend() | Yes | Requires the domain |
+| terminate() | Yes | Requires the domain |
+| grantReseller() | No | The API does not manage reseller privileges |
+| revokeReseller() | No | The API does not manage reseller privileges |
+
 ## Packages
 
 Every hosting account in CyberPanel is created with a package, which sets its resource limits. Create your packages in CyberPanel before provisioning accounts. See [CyberPanel Package Management](https://cyberpanel.net/KnowledgeBase/home/cyberpanel-package-management/) for how to create one.
