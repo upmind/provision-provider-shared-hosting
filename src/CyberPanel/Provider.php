@@ -62,6 +62,11 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
+     * Create a website and its owner account.
+     *
+     * CyberPanel allows 1 website per username account created this way, so
+     * each hosting account maps to a single website (domain).
+     *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function create(CreateParams $params): AccountInfo
