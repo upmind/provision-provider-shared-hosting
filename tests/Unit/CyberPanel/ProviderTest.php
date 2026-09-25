@@ -210,15 +210,6 @@ class ProviderTest extends CyberPanelTestCase
         $this->assertSame([], $this->history, 'No API calls should be made');
     }
 
-    public function testGetLoginUrlRequiresPassword(): void
-    {
-        $error = $this->catchProvisionError(function () {
-            $this->makeProvider()->getLoginUrl(GetLoginUrlParams::create(['username' => 'bob'], false));
-        });
-
-        $this->assertSame('Password is required', $error->getMessage());
-    }
-
     // changePassword
 
     public function testChangePassword(): void

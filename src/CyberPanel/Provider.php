@@ -135,8 +135,16 @@ class Provider extends Category implements ProviderInterface
      */
     public function getLoginUrl(GetLoginUrlParams $params): LoginUrl
     {
-        if (!$params->current_password) {
-            $this->errorResult('Password is required');
+        $password = $params->current_password;
+
+        // If the password has not been provided, change the password to a random one.
+        if (empty($password)) {
+            $password = Helper::generatePassword();
+
+            $this->changePassword(ChangePasswordParams::create([
+                'username' => $params->username,
+                'password' => $password,
+            ]));
         }
 
         // CyberPanel does not provide a single sign-on token via its public API,
@@ -148,7 +156,7 @@ class Provider extends Category implements ProviderInterface
             ->setExpires(null)
             ->setPostFields([
                 'username' => $params->username,
-                'password' => $params->current_password,
+                'password' => $password,
             ])
             ->setMessage('Manual login required');
     }
