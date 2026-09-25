@@ -8,7 +8,7 @@ CyberPanel identifies hosting accounts by their domain name, so functions marked
 
 | Function | Supported | Notes |
 |---|---|---|
-| create() | Yes | A username and password are generated if not provided. The package must exist (see [Packages](#packages)) |
+| create() | Yes | Creates 1 website per username account. A username and password are generated if not provided. The package must exist (see [Packages](#packages)) |
 | getInfo() | Partially | Only confirms the account exists. The API does not report the package or suspension state, so defaults are returned |
 | getUsage() | No | The API does not report per-account resource usage |
 | getLoginUrl() | Partially | CyberPanel has no single sign-on, so this returns the panel URL with the account's credentials for a manual login. If no current password is provided, the account's password is changed to a random one first |
