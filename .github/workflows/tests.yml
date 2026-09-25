@@ -27,7 +27,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "${{ matrix.php }}"
-          tools: composer, phpunit
+          tools: composer
 
       - name: "Get composer cache directory"
         id: composer-cache
@@ -44,4 +44,4 @@ jobs:
         run: composer install --no-ansi --no-interaction --no-progress --no-scripts --prefer-dist
 
       - name: "Run PHPUnit Tests"
-        run: phpunit
+        run: ./vendor/bin/phpunit
