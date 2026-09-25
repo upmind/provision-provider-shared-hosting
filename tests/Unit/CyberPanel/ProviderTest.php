@@ -210,6 +210,30 @@ class ProviderTest extends CyberPanelTestCase
         $this->assertSame([], $this->history, 'No API calls should be made');
     }
 
+    public function testGetLoginUrlChangesPasswordWhenNotProvided(): void
+    {
+        $this->queueJson(['changeStatus' => 1]);
+
+        $result = $this->makeProvider()->getLoginUrl(GetLoginUrlParams::create([
+            'username' => 'bob',
+            'user_ip' => '203.0.113.5',
+        ], false));
+
+        $this->assertSame(['changeUserPassAPI'], $this->calledFunctions());
+        $payload = $this->requestPayload(0);
+        $this->assertSame('bob', $payload['websiteOwner']);
+        $this->assertIsString($payload['ownerPassword']);
+        $this->assertSame(15, strlen($payload['ownerPassword']));
+
+        $values = $this->resultValues($result);
+        $this->assertSame('https://cp.example.com:8090/', $values['login_url']);
+        $this->assertSame(
+            ['username' => 'bob', 'password' => $payload['ownerPassword']],
+            $values['post_fields'],
+            'Login must use the newly generated password'
+        );
+    }
+
     // changePassword
 
     public function testChangePassword(): void
