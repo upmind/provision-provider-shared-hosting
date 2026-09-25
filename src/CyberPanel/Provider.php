@@ -141,10 +141,7 @@ class Provider extends Category implements ProviderInterface
         if (empty($password)) {
             $password = Helper::generatePassword();
 
-            $this->changePassword(ChangePasswordParams::create([
-                'username' => $params->username,
-                'password' => $password,
-            ]));
+            $this->api()->updatePassword($params->username, $password);
         }
 
         // CyberPanel does not provide a single sign-on token via its public API,
