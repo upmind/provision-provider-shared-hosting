@@ -241,20 +241,6 @@ class Api
     }
 
     /**
-     * Delete a single website, leaving its owner account in place.
-     *
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function deleteWebsite(string $domain): void
-    {
-        $response = $this->makeRequest('deleteWebsite', [
-            'domainName' => $domain,
-        ]);
-
-        $this->assertSuccess($response, 'websiteDeleteStatus', 'Failed to delete website');
-    }
-
-    /**
      * Delete the user account along with its websites.
      *
      * With force enabled the panel deletes all the user's websites first, then

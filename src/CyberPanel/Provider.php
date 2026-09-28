@@ -50,9 +50,6 @@ class Provider extends Category implements ProviderInterface
         $this->configuration = $configuration;
     }
 
-    /**
-     * @inheritDoc
-     */
     public static function aboutProvider(): AboutData
     {
         return AboutData::create()
@@ -97,8 +94,6 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
-     *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function getInfo(AccountUsername $params): AccountInfo
@@ -123,8 +118,6 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
-     *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function getUsage(AccountUsername $params): AccountUsage
@@ -134,8 +127,6 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
-     *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function getLoginUrl(GetLoginUrlParams $params): LoginUrl
@@ -164,8 +155,6 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
-     *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function changePassword(ChangePasswordParams $params): EmptyResult
@@ -176,8 +165,6 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
-     *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function changePackage(ChangePackageParams $params): AccountInfo
@@ -211,8 +198,6 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
-     *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function suspend(SuspendParams $params): AccountInfo
@@ -233,8 +218,6 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
-     *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function unSuspend(AccountUsername $params): AccountInfo
@@ -254,20 +237,11 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
-     *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function terminate(AccountUsername $params): EmptyResult
     {
-        // As with Plesk: given a domain, delete just that website; otherwise
-        // delete the user account together with all its websites.
-        if ($params->domain) {
-            $this->api()->deleteWebsite($params->domain);
-
-            return EmptyResult::create()->setMessage('Website deleted');
-        }
-
+        // Each user account created by the library owns a single website. Deleting the account will also delete it.
         $this->api()->deleteAccount($params->username);
 
         return EmptyResult::create()->setMessage('Account deleted');
