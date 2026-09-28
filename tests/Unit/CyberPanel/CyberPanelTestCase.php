@@ -9,6 +9,8 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
+use Illuminate\Container\Container;
+use Illuminate\Support\Facades\Facade;
 use Illuminate\Translation\ArrayLoader;
 use Illuminate\Translation\Translator;
 use Illuminate\Validation\Factory as ValidatorFactory;
@@ -16,7 +18,6 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\DataSet\DataSet;
-use Upmind\ProvisionBase\Provider\DataSet\RuleParser;
 use Upmind\ProvisionProviders\SharedHosting\CyberPanel\Api;
 use Upmind\ProvisionProviders\SharedHosting\CyberPanel\Data\Configuration;
 
@@ -24,8 +25,9 @@ use Upmind\ProvisionProviders\SharedHosting\CyberPanel\Data\Configuration;
  * Shared helpers for CyberPanel tests: a Guzzle client backed by a queue of
  * mocked responses, plus a record of every request sent.
  *
- * Data sets are built with validation disabled, and rule parsing is given a
- * standalone validator, so the tests don't need a Laravel application.
+ * Data sets are built with validation disabled, and the Validator facade used
+ * by rule parsing is backed by a minimal container, so the tests don't need a
+ * Laravel application.
  */
 abstract class CyberPanelTestCase extends TestCase
 {
@@ -43,11 +45,20 @@ abstract class CyberPanelTestCase extends TestCase
     {
         parent::setUp();
 
-        $validatorFactory = new ValidatorFactory(new Translator(new ArrayLoader(), 'en'));
-        RuleParser::setValidator($validatorFactory->make([], []));
+        $container = new Container();
+        $container->instance('validator', new ValidatorFactory(new Translator(new ArrayLoader(), 'en')));
+        Facade::setFacadeApplication($container);
 
         $this->mockHandler = new MockHandler();
         $this->history = [];
+    }
+
+    protected function tearDown(): void
+    {
+        Facade::clearResolvedInstances();
+        Facade::setFacadeApplication(null);
+
+        parent::tearDown();
     }
 
     /**
