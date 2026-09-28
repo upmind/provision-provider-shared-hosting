@@ -1,8 +1,11 @@
 FROM php:7.4-cli
 
+# Debian 11 (bullseye) is EOL, so install from the archive mirror's main repo
+# only (security/updates are gone). No `apt upgrade`: the archive is frozen.
+RUN echo 'deb http://archive.debian.org/debian bullseye main' > /etc/apt/sources.list
+
 # Install dependencies
-RUN apt update && \
-    apt upgrade -y && \
+RUN apt -o Acquire::Check-Valid-Until=false update && \
     apt install -y \
     git \
     curl \
