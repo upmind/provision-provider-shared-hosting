@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.6.37](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.37) - 2026-09-28
+
+- Implement CyberPanel provider
+
 ## [v6.6.36](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.36) - 2026-09-09
 
 - Add subdomains and domain_aliases to UsageData
