@@ -6,6 +6,7 @@ namespace Upmind\ProvisionProviders\SharedHosting;
 
 use Upmind\ProvisionBase\Laravel\ProvisionServiceProvider;
 use Upmind\ProvisionProviders\SharedHosting\Category as SharedHosting;
+use Upmind\ProvisionProviders\SharedHosting\CyberPanel\Provider;
 use Upmind\ProvisionProviders\SharedHosting\Example\Provider as Example;
 use Upmind\ProvisionProviders\SharedHosting\Demo\Provider as Demo;
 use Upmind\ProvisionProviders\SharedHosting\SolidCP\Provider as SolidCP;
@@ -19,6 +20,7 @@ use Upmind\ProvisionProviders\SharedHosting\CentosWeb\Provider as CentosWeb;
 use Upmind\ProvisionProviders\SharedHosting\PanelAlpha\Provider as PanelAlpha;
 use Upmind\ProvisionProviders\SharedHosting\Webuzo\Provider as Webuzo;
 use Upmind\ProvisionProviders\SharedHosting\SPanel\Provider as SPanel;
+use Upmind\ProvisionProviders\SharedHosting\CyberPanel\Provider as CyberPanel;
 
 class LaravelServiceProvider extends ProvisionServiceProvider
 {
@@ -40,5 +42,6 @@ class LaravelServiceProvider extends ProvisionServiceProvider
         $this->bindProvider('shared-hosting', 'panel-alpha', PanelAlpha::class);
         $this->bindProvider('shared-hosting', 'webuzo', Webuzo::class);
         $this->bindProvider('shared-hosting', 'spanel', SPanel::class);
+        $this->bindProvider('shared-hosting', 'cyber-panel', CyberPanel::class);
     }
 }
