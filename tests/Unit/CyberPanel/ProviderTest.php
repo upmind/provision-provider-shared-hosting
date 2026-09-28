@@ -355,35 +355,21 @@ class ProviderTest extends CyberPanelTestCase
 
     // terminate
 
-    public function testTerminateWithDomainDeletesWebsiteOnly(): void
+    public function testTerminateWithDomainStillDeletesAccount(): void
     {
-        $this->queueJson(['websiteDeleteStatus' => 1]);
+        $this->queueJson(['status' => 1, 'deleteStatus' => 1]);
 
         $result = $this->makeProvider()->terminate(AccountUsername::create([
             'username' => 'bob',
             'domain' => 'example.com',
         ], false));
 
-        $this->assertSame(['deleteWebsite'], $this->calledFunctions());
-        $this->assertSame('example.com', $this->requestPayload(0)['domainName']);
-        $this->assertSame('Website deleted', $result->getMessage());
+        $this->assertSame(['submitUserDeletion'], $this->calledFunctions());
+        $this->assertSame('bob', $this->requestPayload(0)['accountUsername']);
+        $this->assertSame('Account deleted', $result->getMessage());
     }
 
-    public function testTerminateWithDomainFailure(): void
-    {
-        $this->queueJson(['websiteDeleteStatus' => 0, 'error_message' => 'Website not found']);
-
-        $error = $this->catchProvisionError(function () {
-            $this->makeProvider()->terminate(AccountUsername::create([
-                'username' => 'bob',
-                'domain' => 'example.com',
-            ], false));
-        });
-
-        $this->assertSame('Failed to delete website', $error->getMessage());
-    }
-
-    public function testTerminateWithoutDomainDeletesAccount(): void
+    public function testTerminateDeletesAccount(): void
     {
         $this->queueJson(['status' => 1, 'deleteStatus' => 1]);
 
@@ -397,7 +383,7 @@ class ProviderTest extends CyberPanelTestCase
         $this->assertSame('Account deleted', $result->getMessage());
     }
 
-    public function testTerminateWithoutDomainFailure(): void
+    public function testTerminateFailure(): void
     {
         $this->queueJson(['status' => 0, 'deleteStatus' => 0, 'error_message' => 'Not enough privileges.']);
 
