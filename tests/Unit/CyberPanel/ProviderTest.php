@@ -495,4 +495,33 @@ class ProviderTest extends CyberPanelTestCase
             'leading symbols and digits stripped' => ['1-2-3-go.net', 'gonet'],
         ];
     }
+
+    public function testSanitizeUsernameReplacesInvalidCharactersWithDigits(): void
+    {
+        $allowed = array_merge(range('a', 'z'), range('A', 'Z'), range('0', '9'), ['_', '-']);
+        $invalid = [';', '&', '|', '`', '$', '.', '/', '\\', '!', '@', ' '];
+
+        // Build a random username alternating allowed and invalid characters,
+        // so every run covers both.
+        $username = '';
+        $expectedPattern = '';
+
+        for ($i = 0; $i < 10; $i++) {
+            $allowedCharacter = (string)$allowed[array_rand($allowed)];
+
+            $username .= $allowedCharacter . $invalid[array_rand($invalid)];
+            $expectedPattern .= preg_quote($allowedCharacter, '/') . '\d';
+        }
+
+        $sanitized = $this->makeProvider()->publicSanitizeUsername($username);
+
+        // Allowed characters are kept in place, each invalid one becomes a single digit.
+        $this->assertMatchesRegularExpression('/^' . $expectedPattern . '$/', $sanitized);
+        $this->assertSame(strlen($username), strlen($sanitized));
+    }
+
+    public function testSanitizeUsernameLeavesValidUsernameUnchanged(): void
+    {
+        $this->assertSame('ok_Name-123', $this->makeProvider()->publicSanitizeUsername('ok_Name-123'));
+    }
 }
