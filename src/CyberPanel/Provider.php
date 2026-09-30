@@ -45,6 +45,13 @@ class Provider extends Category implements ProviderInterface
     private Configuration $configuration;
     private ?Api $api = null;
 
+    /**
+     * Limit allowed characters for a username to alphanumerics, dash and underscore.
+     *
+     * @var string
+     */
+    private string $allowedCharactersRegex = '/[^A-Za-z0-9_-]/';
+
     public function __construct(Configuration $configuration)
     {
         $this->configuration = $configuration;
@@ -76,7 +83,7 @@ class Provider extends Category implements ProviderInterface
             $this->errorResult('Package name is required');
         }
 
-        $username = $params->username ?: $this->generateUsername($params->domain);
+        $username = $this->sanitizeUsername($params->username ?: $this->generateUsername($params->domain));
         $password = $params->password ?: Helper::generatePassword();
 
         $this->api()->assertPackageExists($params->package_name);
@@ -302,11 +309,27 @@ class Provider extends Category implements ProviderInterface
      */
     protected function generateUsername(string $base): string
     {
-        return substr(
+        return mb_substr(
             preg_replace('/^[^a-z]+/', '', preg_replace('/[^a-z0-9]/', '', strtolower($base))),
             0,
             self::MAX_USERNAME_LENGTH - 2
         ) . random_int(1, 99);
+    }
+
+    /**
+     * Replace each character not allowed in a username with a random digit.
+     *
+     * Matches per multibyte character where possible, falling back to per byte
+     * for input that is not valid UTF-8.
+     */
+    protected function sanitizeUsername(string $username): string
+    {
+        $replaceWithDigit = static function (): string {
+            return (string) random_int(0, 9);
+        };
+
+        return preg_replace_callback($this->allowedCharactersRegex . 'u', $replaceWithDigit, $username)
+            ?? preg_replace_callback($this->allowedCharactersRegex, $replaceWithDigit, $username);
     }
 
     protected function api(): Api
