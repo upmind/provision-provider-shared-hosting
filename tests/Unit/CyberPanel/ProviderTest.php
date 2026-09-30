@@ -82,6 +82,7 @@ class ProviderTest extends CyberPanelTestCase
         $this->assertMatchesRegularExpression('/^mysite\d{1,2}$/', $payload['websiteOwner']);
         $this->assertIsString($payload['ownerPassword']);
         $this->assertSame(15, strlen($payload['ownerPassword']));
+        $this->assertMatchesRegularExpression('/^[A-Za-z0-9_+()\[\]{}-]+$/', $payload['ownerPassword']);
 
         $this->assertSame($payload['websiteOwner'], $this->resultValues($result)['username']);
     }
@@ -224,6 +225,7 @@ class ProviderTest extends CyberPanelTestCase
         $this->assertSame('bob', $payload['websiteOwner']);
         $this->assertIsString($payload['ownerPassword']);
         $this->assertSame(15, strlen($payload['ownerPassword']));
+        $this->assertMatchesRegularExpression('/^[A-Za-z0-9_+()\[\]{}-]+$/', $payload['ownerPassword']);
 
         $values = $this->resultValues($result);
         $this->assertSame('https://cp.example.com:8090/', $values['login_url']);
@@ -494,5 +496,52 @@ class ProviderTest extends CyberPanelTestCase
             'leading digits stripped' => ['123abc.com', 'abccom'],
             'leading symbols and digits stripped' => ['1-2-3-go.net', 'gonet'],
         ];
+    }
+
+    public function testSanitizeUsernameReplacesInvalidCharactersWithDigits(): void
+    {
+        $allowed = array_merge(range('a', 'z'), range('A', 'Z'), range('0', '9'), ['_', '-']);
+        $invalid = [';', '&', '|', '`', '$', '.', '/', '\\', '!', '@', ' '];
+
+        // Build a random username alternating allowed and invalid characters,
+        // so every run covers both.
+        $username = '';
+        $expectedPattern = '';
+
+        for ($i = 0; $i < 10; $i++) {
+            $allowedCharacter = (string)$allowed[array_rand($allowed)];
+
+            $username .= $allowedCharacter . $invalid[array_rand($invalid)];
+            $expectedPattern .= preg_quote($allowedCharacter, '/') . '\d';
+        }
+
+        $sanitized = $this->makeProvider()->publicSanitizeUsername($username);
+
+        // Allowed characters are kept in place, each invalid one becomes a single digit.
+        $this->assertMatchesRegularExpression('/^' . $expectedPattern . '$/', $sanitized);
+        $this->assertSame(strlen($username), strlen($sanitized));
+    }
+
+    public function testSanitizeUsernameLeavesValidUsernameUnchanged(): void
+    {
+        $this->assertSame('ok_Name-123', $this->makeProvider()->publicSanitizeUsername('ok_Name-123'));
+    }
+
+    public function testCreateDoesNotSanitizeGivenUsername(): void
+    {
+        $this->queueJson(['Default'], ['createWebSiteStatus' => 1]);
+
+        $result = $this->makeProvider()->create(CreateParams::create([
+            'domain' => 'example.com',
+            'email' => 'owner@example.com',
+            'package_name' => 'Default',
+            'username' => 'bob;x',
+            'password' => 'P4ssword!',
+        ], false));
+
+        $payload = $this->requestPayload(1);
+        $this->assertSame('bob;x', $payload['websiteOwner']);
+        $this->assertSame('P4ssword!', $payload['ownerPassword']);
+        $this->assertSame('bob;x', $this->resultValues($result)['username']);
     }
 }
