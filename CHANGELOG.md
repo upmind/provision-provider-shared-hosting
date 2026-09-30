@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.18.1](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.18.1) - 2026-09-30
+
+- Update CyberPanel provider, sanitise generated username & password from invalid API characters
+
 ## [v6.18.0](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.18.0) - 2026-09-28
 
 - Implement CyberPanel provider
