@@ -527,7 +527,7 @@ class ProviderTest extends CyberPanelTestCase
         $this->assertSame('ok_Name-123', $this->makeProvider()->publicSanitizeUsername('ok_Name-123'));
     }
 
-    public function testCreateSanitizesGivenUsername(): void
+    public function testCreateDoesNotSanitizeGivenUsername(): void
     {
         $this->queueJson(['Default'], ['createWebSiteStatus' => 1]);
 
@@ -540,8 +540,8 @@ class ProviderTest extends CyberPanelTestCase
         ], false));
 
         $payload = $this->requestPayload(1);
-        $this->assertMatchesRegularExpression('/^bob\dx$/', $payload['websiteOwner']);
+        $this->assertSame('bob;x', $payload['websiteOwner']);
         $this->assertSame('P4ssword!', $payload['ownerPassword']);
-        $this->assertSame($payload['websiteOwner'], $this->resultValues($result)['username']);
+        $this->assertSame('bob;x', $this->resultValues($result)['username']);
     }
 }
