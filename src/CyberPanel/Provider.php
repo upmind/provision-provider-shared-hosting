@@ -52,6 +52,16 @@ class Provider extends Category implements ProviderInterface
      */
     private string $allowedCharactersRegex = '/[^A-Za-z0-9_-]/';
 
+    /**
+     * Characters for generated passwords: alphanumerics, underscore, plus,
+     * brackets and dash, avoiding those CyberPanel's API rejects.
+     *
+     * The dash must stay last, as Helper::generatePassword() reads `x-y` as a range.
+     *
+     * @var string
+     */
+    private string $passwordCharacters = '0-9a-zA-Z_+()[]{}-';
+
     public function __construct(Configuration $configuration)
     {
         $this->configuration = $configuration;
@@ -84,7 +94,7 @@ class Provider extends Category implements ProviderInterface
         }
 
         $username = $this->sanitizeUsername($params->username ?: $this->generateUsername($params->domain));
-        $password = $params->password ?: Helper::generatePassword();
+        $password = $params->password ?: Helper::generatePassword(15, $this->passwordCharacters);
 
         $this->api()->assertPackageExists($params->package_name);
 
@@ -142,7 +152,7 @@ class Provider extends Category implements ProviderInterface
 
         // If the password has not been provided, change the password to a random one.
         if (empty($password)) {
-            $password = Helper::generatePassword();
+            $password = Helper::generatePassword(15, $this->passwordCharacters);
 
             $this->api()->updatePassword($params->username, $password);
         }
