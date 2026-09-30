@@ -93,7 +93,7 @@ class Provider extends Category implements ProviderInterface
             $this->errorResult('Package name is required');
         }
 
-        $username = $this->sanitizeUsername($params->username ?: $this->generateUsername($params->domain));
+        $username = $params->username ?: $this->sanitizeUsername($this->generateUsername($params->domain));
         $password = $params->password ?: Helper::generatePassword(15, $this->passwordCharacters);
 
         $this->api()->assertPackageExists($params->package_name);
