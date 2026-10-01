@@ -2,6 +2,11 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.6.39](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.39) - 2026-10-01
+
+- Update CyberPanel, sanitise new username & new password to only allow alphanumeric characters and `-`, `_`, `+`
+- Update CyberPanel, when terminating an account, first delete the website if domain provided, pause for 2 seconds and then delete account
+
 ## [v6.6.38](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.38) - 2026-09-30
 
 - Update CyberPanel provider, sanitise generated username & password from invalid API characters
