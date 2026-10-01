@@ -46,21 +46,15 @@ class Provider extends Category implements ProviderInterface
     private ?Api $api = null;
 
     /**
-     * Limit allowed characters for a username to alphanumerics, dash and underscore.
+     * Characters allowed in usernames and generated passwords: alphanumerics,
+     * underscore, plus and dash, avoiding those CyberPanel's API rejects in input: ` $ & ( ) [ ] { } ; : ' < >
+     *
+     * The dash must stay last, as Helper::generatePassword() reads `x-y` as a range,
+     * and it must be literal in the sanitisation regex character class.
      *
      * @var string
      */
-    private string $allowedCharactersRegex = '/[^A-Za-z0-9_-]/';
-
-    /**
-     * Characters for generated passwords: alphanumerics, underscore, plus,
-     * brackets and dash, avoiding those CyberPanel's API rejects.
-     *
-     * The dash must stay last, as Helper::generatePassword() reads `x-y` as a range.
-     *
-     * @var string
-     */
-    private string $passwordCharacters = '0-9a-zA-Z_+()[]{}-';
+    private string $allowedCharacters = '0-9a-zA-Z_+-';
 
     public function __construct(Configuration $configuration)
     {
@@ -94,7 +88,7 @@ class Provider extends Category implements ProviderInterface
         }
 
         $username = $params->username ?: $this->sanitizeUsername($this->generateUsername($params->domain));
-        $password = $params->password ?: Helper::generatePassword(15, $this->passwordCharacters);
+        $password = $params->password ?: Helper::generatePassword(15, $this->allowedCharacters);
 
         $this->api()->assertPackageExists($params->package_name);
 
@@ -152,7 +146,7 @@ class Provider extends Category implements ProviderInterface
 
         // If the password has not been provided, change the password to a random one.
         if (empty($password)) {
-            $password = Helper::generatePassword(15, $this->passwordCharacters);
+            $password = Helper::generatePassword(15, $this->allowedCharacters);
 
             $this->api()->updatePassword($params->username, $password);
         }
@@ -338,8 +332,10 @@ class Provider extends Category implements ProviderInterface
             return (string) random_int(0, 9);
         };
 
-        return preg_replace_callback($this->allowedCharactersRegex . 'u', $replaceWithDigit, $username)
-            ?? preg_replace_callback($this->allowedCharactersRegex, $replaceWithDigit, $username);
+        $disallowedCharactersRegex = '/[^' . $this->allowedCharacters . ']/';
+
+        return preg_replace_callback($disallowedCharactersRegex . 'u', $replaceWithDigit, $username)
+            ?? preg_replace_callback($disallowedCharactersRegex, $replaceWithDigit, $username);
     }
 
     protected function api(): Api
