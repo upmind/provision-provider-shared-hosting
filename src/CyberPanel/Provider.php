@@ -37,6 +37,11 @@ class Provider extends Category implements ProviderInterface
     private const MAX_USERNAME_LENGTH = 8;
 
     /**
+     * Seconds to wait after deleting a website before deleting its owner account.
+     */
+    private const WEBSITE_DELETION_DELAY = 2;
+
+    /**
      * Placeholder package name for responses where the API cannot report the
      * account's real package (see class docblock).
      */
@@ -46,21 +51,15 @@ class Provider extends Category implements ProviderInterface
     private ?Api $api = null;
 
     /**
-     * Limit allowed characters for a username to alphanumerics, dash and underscore.
+     * Characters allowed in usernames and generated passwords: alphanumerics,
+     * underscore, plus and dash, avoiding those CyberPanel's API rejects in input: ` $ & ( ) [ ] { } ; : ' < >
+     *
+     * The dash must stay last, as Helper::generatePassword() reads `x-y` as a range,
+     * and it must be literal in the sanitisation regex character class.
      *
      * @var string
      */
-    private string $allowedCharactersRegex = '/[^A-Za-z0-9_-]/';
-
-    /**
-     * Characters for generated passwords: alphanumerics, underscore, plus,
-     * brackets and dash, avoiding those CyberPanel's API rejects.
-     *
-     * The dash must stay last, as Helper::generatePassword() reads `x-y` as a range.
-     *
-     * @var string
-     */
-    private string $passwordCharacters = '0-9a-zA-Z_+()[]{}-';
+    private string $allowedCharacters = '0-9a-zA-Z_+-';
 
     public function __construct(Configuration $configuration)
     {
@@ -94,7 +93,7 @@ class Provider extends Category implements ProviderInterface
         }
 
         $username = $params->username ?: $this->sanitizeUsername($this->generateUsername($params->domain));
-        $password = $params->password ?: Helper::generatePassword(15, $this->passwordCharacters);
+        $password = $params->password ?: Helper::generatePassword(15, $this->allowedCharacters);
 
         $this->api()->assertPackageExists($params->package_name);
 
@@ -152,7 +151,7 @@ class Provider extends Category implements ProviderInterface
 
         // If the password has not been provided, change the password to a random one.
         if (empty($password)) {
-            $password = Helper::generatePassword(15, $this->passwordCharacters);
+            $password = Helper::generatePassword(15, $this->allowedCharacters);
 
             $this->api()->updatePassword($params->username, $password);
         }
@@ -258,7 +257,15 @@ class Provider extends Category implements ProviderInterface
      */
     public function terminate(AccountUsername $params): EmptyResult
     {
-        // Each user account created by the library owns a single website. Deleting the account will also delete it.
+        // Each user account created by the library owns a single website. Delete it first, then the account.
+        if ($params->domain) {
+            $this->api()->deleteWebsite($params->domain);
+
+            // Give the panel time to finish removing the website before deleting the account,
+            // as unexpected foreign key errors might occur.
+            $this->wait(self::WEBSITE_DELETION_DELAY);
+        }
+
         $this->api()->deleteAccount($params->username);
 
         return EmptyResult::create()->setMessage('Account deleted');
@@ -338,8 +345,18 @@ class Provider extends Category implements ProviderInterface
             return (string) random_int(0, 9);
         };
 
-        return preg_replace_callback($this->allowedCharactersRegex . 'u', $replaceWithDigit, $username)
-            ?? preg_replace_callback($this->allowedCharactersRegex, $replaceWithDigit, $username);
+        $disallowedCharactersRegex = '/[^' . $this->allowedCharacters . ']/';
+
+        return preg_replace_callback($disallowedCharactersRegex . 'u', $replaceWithDigit, $username)
+            ?? preg_replace_callback($disallowedCharactersRegex, $replaceWithDigit, $username);
+    }
+
+    /**
+     * Pause execution for the given number of seconds.
+     */
+    protected function wait(int $seconds): void
+    {
+        sleep($seconds);
     }
 
     protected function api(): Api
