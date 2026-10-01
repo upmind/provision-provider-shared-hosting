@@ -37,6 +37,11 @@ class Provider extends Category implements ProviderInterface
     private const MAX_USERNAME_LENGTH = 8;
 
     /**
+     * Seconds to wait after deleting a website before deleting its owner account.
+     */
+    private const WEBSITE_DELETION_DELAY = 2;
+
+    /**
      * Placeholder package name for responses where the API cannot report the
      * account's real package (see class docblock).
      */
@@ -252,7 +257,15 @@ class Provider extends Category implements ProviderInterface
      */
     public function terminate(AccountUsername $params): EmptyResult
     {
-        // Each user account created by the library owns a single website. Deleting the account will also delete it.
+        // Each user account created by the library owns a single website. Delete it first, then the account.
+        if ($params->domain) {
+            $this->api()->deleteWebsite($params->domain);
+
+            // Give the panel time to finish removing the website before deleting the account,
+            // as unexpected foreign key errors might occur.
+            $this->wait(self::WEBSITE_DELETION_DELAY);
+        }
+
         $this->api()->deleteAccount($params->username);
 
         return EmptyResult::create()->setMessage('Account deleted');
@@ -336,6 +349,14 @@ class Provider extends Category implements ProviderInterface
 
         return preg_replace_callback($disallowedCharactersRegex . 'u', $replaceWithDigit, $username)
             ?? preg_replace_callback($disallowedCharactersRegex, $replaceWithDigit, $username);
+    }
+
+    /**
+     * Pause execution for the given number of seconds.
+     */
+    protected function wait(int $seconds): void
+    {
+        sleep($seconds);
     }
 
     protected function api(): Api

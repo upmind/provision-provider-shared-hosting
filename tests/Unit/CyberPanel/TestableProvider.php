@@ -15,6 +15,11 @@ class TestableProvider extends Provider
 {
     private Api $testApi;
 
+    /**
+     * @var int[] Seconds requested by each wait() call, recorded instead of sleeping
+     */
+    public array $waits = [];
+
     public function __construct(Configuration $configuration, Api $api)
     {
         parent::__construct($configuration);
@@ -25,6 +30,11 @@ class TestableProvider extends Provider
     protected function api(): Api
     {
         return $this->testApi;
+    }
+
+    protected function wait(int $seconds): void
+    {
+        $this->waits[] = $seconds;
     }
 
     public function publicControlPanelUrl(): string
