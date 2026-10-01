@@ -357,18 +357,36 @@ class ProviderTest extends CyberPanelTestCase
 
     // terminate
 
-    public function testTerminateWithDomainStillDeletesAccount(): void
+    public function testTerminateWithDomainDeletesWebsiteThenAccount(): void
     {
-        $this->queueJson(['status' => 1, 'deleteStatus' => 1]);
+        $this->queueJson(['status' => 1, 'websiteDeleteStatus' => 1], ['status' => 1, 'deleteStatus' => 1]);
 
-        $result = $this->makeProvider()->terminate(AccountUsername::create([
+        $provider = $this->makeProvider();
+        $result = $provider->terminate(AccountUsername::create([
             'username' => 'bob',
             'domain' => 'example.com',
         ], false));
 
-        $this->assertSame(['submitUserDeletion'], $this->calledFunctions());
-        $this->assertSame('bob', $this->requestPayload(0)['accountUsername']);
+        $this->assertSame(['deleteWebsite', 'submitUserDeletion'], $this->calledFunctions());
+        $this->assertSame([2], $provider->waits);
+        $this->assertSame('example.com', $this->requestPayload(0)['domainName']);
+        $this->assertSame('bob', $this->requestPayload(1)['accountUsername']);
         $this->assertSame('Account deleted', $result->getMessage());
+    }
+
+    public function testTerminateWebsiteDeletionFailureSkipsAccountDeletion(): void
+    {
+        $this->queueJson(['status' => 0, 'websiteDeleteStatus' => 0, 'error_message' => 'Website not found.']);
+
+        $error = $this->catchProvisionError(function () {
+            $this->makeProvider()->terminate(AccountUsername::create([
+                'username' => 'bob',
+                'domain' => 'example.com',
+            ], false));
+        });
+
+        $this->assertSame('Failed to delete hosting website', $error->getMessage());
+        $this->assertSame(['deleteWebsite'], $this->calledFunctions());
     }
 
     public function testTerminateDeletesAccount(): void
