@@ -82,7 +82,7 @@ class ProviderTest extends CyberPanelTestCase
         $this->assertMatchesRegularExpression('/^mysite\d{1,2}$/', $payload['websiteOwner']);
         $this->assertIsString($payload['ownerPassword']);
         $this->assertSame(15, strlen($payload['ownerPassword']));
-        $this->assertMatchesRegularExpression('/^[A-Za-z0-9_+()\[\]{}-]+$/', $payload['ownerPassword']);
+        $this->assertMatchesRegularExpression('/^[A-Za-z0-9_+-]+$/', $payload['ownerPassword']);
 
         $this->assertSame($payload['websiteOwner'], $this->resultValues($result)['username']);
     }
@@ -225,7 +225,7 @@ class ProviderTest extends CyberPanelTestCase
         $this->assertSame('bob', $payload['websiteOwner']);
         $this->assertIsString($payload['ownerPassword']);
         $this->assertSame(15, strlen($payload['ownerPassword']));
-        $this->assertMatchesRegularExpression('/^[A-Za-z0-9_+()\[\]{}-]+$/', $payload['ownerPassword']);
+        $this->assertMatchesRegularExpression('/^[A-Za-z0-9_+-]+$/', $payload['ownerPassword']);
 
         $values = $this->resultValues($result);
         $this->assertSame('https://cp.example.com:8090/', $values['login_url']);
