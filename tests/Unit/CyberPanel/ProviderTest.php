@@ -45,14 +45,14 @@ class ProviderTest extends CyberPanelTestCase
             'email' => 'owner@example.com',
             'package_name' => 'Pro',
             'username' => 'bob',
-            'password' => 'P4ssword!',
+            'password' => 'P4ssword_+-',
         ], false));
 
         $this->assertSame(['listPackage', 'createWebsite'], $this->calledFunctions());
 
         $payload = $this->requestPayload(1);
         $this->assertSame('bob', $payload['websiteOwner']);
-        $this->assertSame('P4ssword!', $payload['ownerPassword']);
+        $this->assertSame('P4ssword_+-', $payload['ownerPassword']);
         $this->assertSame('Pro', $payload['packageName']);
         $this->assertSame('example.com', $payload['domainName']);
         $this->assertSame('owner@example.com', $payload['ownerEmail']);
@@ -516,7 +516,7 @@ class ProviderTest extends CyberPanelTestCase
         ];
     }
 
-    public function testSanitizeUsernameReplacesInvalidCharactersWithDigits(): void
+    public function testSanitizeReplacesInvalidCharactersWithDigits(): void
     {
         $allowed = array_merge(range('a', 'z'), range('A', 'Z'), range('0', '9'), ['_', '-']);
         $invalid = [';', '&', '|', '`', '$', '.', '/', '\\', '!', '@', ' '];
@@ -533,16 +533,16 @@ class ProviderTest extends CyberPanelTestCase
             $expectedPattern .= preg_quote($allowedCharacter, '/') . '\d';
         }
 
-        $sanitized = $this->makeProvider()->publicSanitizeUsername($username);
+        $sanitized = $this->makeProvider()->publicSanitize($username);
 
         // Allowed characters are kept in place, each invalid one becomes a single digit.
         $this->assertMatchesRegularExpression('/^' . $expectedPattern . '$/', $sanitized);
         $this->assertSame(strlen($username), strlen($sanitized));
     }
 
-    public function testSanitizeUsernameLeavesValidUsernameUnchanged(): void
+    public function testSanitizeLeavesValidValueUnchanged(): void
     {
-        $this->assertSame('ok_Name-123', $this->makeProvider()->publicSanitizeUsername('ok_Name-123'));
+        $this->assertSame('ok_Name-123', $this->makeProvider()->publicSanitize('ok_Name-123'));
     }
 
     public function testCreateDoesNotSanitizeGivenUsername(): void
@@ -554,12 +554,28 @@ class ProviderTest extends CyberPanelTestCase
             'email' => 'owner@example.com',
             'package_name' => 'Default',
             'username' => 'bob;x',
-            'password' => 'P4ssword!',
+            'password' => 'P4ssword_+-',
         ], false));
 
         $payload = $this->requestPayload(1);
         $this->assertSame('bob;x', $payload['websiteOwner']);
-        $this->assertSame('P4ssword!', $payload['ownerPassword']);
+        $this->assertSame('P4ssword_+-', $payload['ownerPassword']);
         $this->assertSame('bob;x', $this->resultValues($result)['username']);
+    }
+
+    public function testCreateSanitizesGivenPassword(): void
+    {
+        $this->queueJson(['Default'], ['createWebSiteStatus' => 1]);
+
+        $this->makeProvider()->create(CreateParams::create([
+            'domain' => 'example.com',
+            'email' => 'owner@example.com',
+            'package_name' => 'Default',
+            'username' => 'bob',
+            'password' => 'nT}O5Bk1Y6}J-ap',
+        ], false));
+
+        $payload = $this->requestPayload(1);
+        $this->assertMatchesRegularExpression('/^nT\dO5Bk1Y6\dJ-ap$/', $payload['ownerPassword']);
     }
 }
