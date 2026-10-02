@@ -178,6 +178,12 @@ class Provider extends Category implements ProviderInterface
      */
     public function changePassword(ChangePasswordParams $params): EmptyResult
     {
+        if (!preg_match('/^[' . $this->allowedCharacters . ']+$/D', $params->password)) {
+            $this->errorResult(
+                'Password may only contain letters, numbers, underscore (_), plus (+) and dash (-)'
+            );
+        }
+
         $this->api()->updatePassword($params->username, $params->password);
 
         return EmptyResult::create()->setMessage('Password changed');

@@ -244,13 +244,46 @@ class ProviderTest extends CyberPanelTestCase
 
         $result = $this->makeProvider()->changePassword(ChangePasswordParams::create([
             'username' => 'bob',
-            'password' => 'N3wPassword!',
+            'password' => 'N3w_Pass+word-',
         ], false));
 
         $this->assertSame(['changeUserPassAPI'], $this->calledFunctions());
         $this->assertSame('bob', $this->requestPayload(0)['websiteOwner']);
-        $this->assertSame('N3wPassword!', $this->requestPayload(0)['ownerPassword']);
+        $this->assertSame('N3w_Pass+word-', $this->requestPayload(0)['ownerPassword']);
         $this->assertSame('Password changed', $result->getMessage());
+    }
+
+    /**
+     * @dataProvider invalidChangePasswordProvider
+     */
+    public function testChangePasswordRejectsDisallowedCharacters(string $password): void
+    {
+        $error = $this->catchProvisionError(function () use ($password) {
+            $this->makeProvider()->changePassword(ChangePasswordParams::create([
+                'username' => 'bob',
+                'password' => $password,
+            ], false));
+        });
+
+        $this->assertSame(
+            'Password may only contain letters, numbers, underscore (_), plus (+) and dash (-)',
+            $error->getMessage()
+        );
+        $this->assertSame([], $this->history, 'No API calls should be made');
+    }
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    public static function invalidChangePasswordProvider(): array
+    {
+        return [
+            'braces' => ['nT}O5Bk1Y6}J-ap'],
+            'exclamation mark' => ['N3wPassword!'],
+            'space' => ['new password'],
+            'multibyte' => ['pässwörd'],
+            'trailing newline' => ["N3wPassword\n"],
+        ];
     }
 
     // changePackage
