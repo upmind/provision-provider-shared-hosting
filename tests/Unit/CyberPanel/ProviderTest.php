@@ -498,7 +498,30 @@ class ProviderTest extends CyberPanelTestCase
         $username = $this->makeProvider()->publicGenerateUsername($domain);
 
         $this->assertMatchesRegularExpression('/^' . preg_quote($expectedPrefix, '/') . '\d{1,2}$/', $username);
+        $this->assertGreaterThanOrEqual(3, strlen($username));
         $this->assertLessThanOrEqual(8, strlen($username));
+    }
+
+    /**
+     * @dataProvider shortUsernameProvider
+     */
+    public function testGenerateUsernamePadsToMinimumLength(string $domain, string $expectedPattern): void
+    {
+        $username = $this->makeProvider()->publicGenerateUsername($domain);
+
+        $this->assertMatchesRegularExpression($expectedPattern, $username);
+        $this->assertGreaterThanOrEqual(3, strlen($username));
+    }
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    public static function shortUsernameProvider(): array
+    {
+        return [
+            'no letters in domain' => ['123.45', '/^[a-z]{1,2}\d{1,2}$/'],
+            'single letter after leading digits' => ['1-x', '/^x[a-z]?\d{1,2}$/'],
+        ];
     }
 
     /**
