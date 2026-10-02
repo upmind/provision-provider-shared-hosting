@@ -11,8 +11,8 @@ CyberPanel identifies hosting accounts by their domain name, so functions marked
 | create() | Yes | Creates 1 website per username account. A username and password are generated if not provided. The package must exist (see [Packages](#packages)) |
 | getInfo() | Partially | Only confirms the account exists. The API does not report the package or suspension state, so defaults are returned |
 | getUsage() | No | The API does not report per-account resource usage |
-| getLoginUrl() | Partially | CyberPanel has no single sign-on, so this returns the panel URL with the account's credentials for a manual login. If no current password is provided, the account's password is changed to a random one first |
-| changePassword() | Yes | |
+| getLoginUrl() | Yes | Returns CyberPanel's `api/loginAPI` URL with the account's credentials to POST, which logs the customer straight into the panel. If no current password is provided, or it contains characters CyberPanel does not allow, the account's password is changed to a random one first. The account needs API access enabled (see [Customer login](#customer-login)) |
+| changePassword() | Yes | The password may only contain letters, numbers, `_`, `+` and `-` |
 | changePackage() | Yes | Requires the domain. The package must exist (see [Packages](#packages)) |
 | changePrimaryDomain() | No | |
 | suspend() | Yes | Requires the domain |
@@ -46,6 +46,14 @@ CyberPanel rejects API requests unless API access is enabled for the account who
 3. Under **Select User Account**, choose the account to use for the API, select **Enable API Access**, and click **Save Changes**. The **API Access Status** should then show **Currently Enabled**.
 
    ![Configure API Access page with API access enabled](img/api-access-003.png)
+
+## Customer login
+
+`getLoginUrl()` logs customers in through CyberPanel's `api/loginAPI` endpoint, which only accepts accounts that have API access enabled and are active.
+
+- Accounts created by this provider get API access automatically.
+- Accounts created another way, or owners that already existed before provisioning, may not have it. Enable it for them under **Users** > **API Access**, as in [Enabling API access](#enabling-api-access).
+- Customers with two-factor authentication enabled in CyberPanel cannot be logged in this way and must log in manually.
 
 ## Packages
 

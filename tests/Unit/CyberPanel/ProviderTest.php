@@ -204,10 +204,11 @@ class ProviderTest extends CyberPanelTestCase
         ], false));
 
         $values = $this->resultValues($result);
-        $this->assertSame('https://cp.example.com:8090/', $values['login_url']);
+        $this->assertSame('https://cp.example.com:8090/api/loginAPI', $values['login_url']);
         $this->assertSame('203.0.113.5', $values['for_ip']);
         $this->assertNull($values['expires']);
         $this->assertSame(['username' => 'bob', 'password' => 'P4ssword_+-'], $values['post_fields']);
+        $this->assertSame('Login URL generated', $result->getMessage());
         $this->assertSame([], $this->history, 'No API calls should be made');
     }
 
@@ -228,7 +229,7 @@ class ProviderTest extends CyberPanelTestCase
         $this->assertMatchesRegularExpression('/^[A-Za-z0-9_+-]+$/', $payload['ownerPassword']);
 
         $values = $this->resultValues($result);
-        $this->assertSame('https://cp.example.com:8090/', $values['login_url']);
+        $this->assertSame('https://cp.example.com:8090/api/loginAPI', $values['login_url']);
         $this->assertSame(
             ['username' => 'bob', 'password' => $payload['ownerPassword']],
             $values['post_fields'],
