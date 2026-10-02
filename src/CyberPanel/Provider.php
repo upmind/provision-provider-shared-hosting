@@ -34,6 +34,7 @@ use Upmind\ProvisionProviders\SharedHosting\Data\SuspendParams;
  */
 class Provider extends Category implements ProviderInterface
 {
+    private const MIN_USERNAME_LENGTH = 3;
     private const MAX_USERNAME_LENGTH = 8;
 
     /**
@@ -325,14 +326,24 @@ class Provider extends Category implements ProviderInterface
 
     /**
      * Generate a control-panel-safe username from a domain name.
+     *
+     * Pads the prefix with random lowercase letters when the domain yields too
+     * few characters to reach the minimum username length.
      */
     protected function generateUsername(string $base): string
     {
-        return mb_substr(
+        $prefix = mb_substr(
             preg_replace('/^[^a-z]+/', '', preg_replace('/[^a-z0-9]/', '', strtolower($base))),
             0,
             self::MAX_USERNAME_LENGTH - 2
-        ) . random_int(1, 99);
+        );
+        $suffix = (string) random_int(1, 99);
+
+        while (strlen($prefix . $suffix) < self::MIN_USERNAME_LENGTH) {
+            $prefix .= chr(random_int(ord('a'), ord('z')));
+        }
+
+        return $prefix . $suffix;
     }
 
     /**
