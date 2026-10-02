@@ -2,6 +2,14 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v6.6.40](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.40) - 2026-10-02
+
+- Fix CyberPanel create() failing when the provided password contains characters rejected by the API, sanitise it to only allow alphanumeric characters and `-`, `_`, `+`
+- Fix CyberPanel generated usernames shorter than the 3 character minimum
+- Fix CyberPanel changePassword() sending passwords the API rejects, fail early with a clear error instead
+- Fix CyberPanel getLoginUrl() returning a password the API rejects, change it to a random valid one instead
+- Fix CyberPanel getLoginUrl() not logging the customer in, use the `api/loginAPI` endpoint for the posted credentials
+
 ## [v6.6.39](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.6.39) - 2026-10-01
 
 - Update CyberPanel, sanitise new username & new password to only allow alphanumeric characters and `-`, `_`, `+`
