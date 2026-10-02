@@ -160,18 +160,19 @@ class Provider extends Category implements ProviderInterface
             $this->api()->updatePassword($params->username, $password);
         }
 
-        // CyberPanel does not provide a single sign-on token via its public API,
-        // so return the control panel URL with the account credentials for a
-        // manual login.
+        // CyberPanel has no single sign-on token, but its loginAPI endpoint accepts
+        // the account credentials as POSTed form data, starts a session for the
+        // posting browser and redirects to the dashboard. The account needs API
+        // access enabled, which CyberPanel sets for owners created via the API.
         return LoginUrl::create()
-            ->setLoginUrl($this->controlPanelUrl())
+            ->setLoginUrl($this->controlPanelUrl() . 'api/loginAPI')
             ->setForIp($params->user_ip)
             ->setExpires(null)
             ->setPostFields([
                 'username' => $params->username,
                 'password' => $password,
             ])
-            ->setMessage('Manual login required');
+            ->setMessage('Login URL generated');
     }
 
     /**
