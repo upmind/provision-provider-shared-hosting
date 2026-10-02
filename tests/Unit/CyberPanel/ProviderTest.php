@@ -199,7 +199,7 @@ class ProviderTest extends CyberPanelTestCase
     {
         $result = $this->makeProvider()->getLoginUrl(GetLoginUrlParams::create([
             'username' => 'bob',
-            'current_password' => 'P4ssword!',
+            'current_password' => 'P4ssword_+-',
             'user_ip' => '203.0.113.5',
         ], false));
 
@@ -207,7 +207,7 @@ class ProviderTest extends CyberPanelTestCase
         $this->assertSame('https://cp.example.com:8090/', $values['login_url']);
         $this->assertSame('203.0.113.5', $values['for_ip']);
         $this->assertNull($values['expires']);
-        $this->assertSame(['username' => 'bob', 'password' => 'P4ssword!'], $values['post_fields']);
+        $this->assertSame(['username' => 'bob', 'password' => 'P4ssword_+-'], $values['post_fields']);
         $this->assertSame([], $this->history, 'No API calls should be made');
     }
 
@@ -232,6 +232,29 @@ class ProviderTest extends CyberPanelTestCase
         $this->assertSame(
             ['username' => 'bob', 'password' => $payload['ownerPassword']],
             $values['post_fields'],
+            'Login must use the newly generated password'
+        );
+    }
+
+    public function testGetLoginUrlChangesPasswordWhenProvidedIsInvalid(): void
+    {
+        $this->queueJson(['changeStatus' => 1]);
+
+        $result = $this->makeProvider()->getLoginUrl(GetLoginUrlParams::create([
+            'username' => 'bob',
+            'current_password' => 'nT}O5Bk1Y6}J-ap',
+            'user_ip' => '203.0.113.5',
+        ], false));
+
+        $this->assertSame(['changeUserPassAPI'], $this->calledFunctions());
+        $payload = $this->requestPayload(0);
+        $this->assertSame('bob', $payload['websiteOwner']);
+        $this->assertSame(15, strlen($payload['ownerPassword']));
+        $this->assertMatchesRegularExpression('/^[A-Za-z0-9_+-]+$/', $payload['ownerPassword']);
+
+        $this->assertSame(
+            ['username' => 'bob', 'password' => $payload['ownerPassword']],
+            $this->resultValues($result)['post_fields'],
             'Login must use the newly generated password'
         );
     }
