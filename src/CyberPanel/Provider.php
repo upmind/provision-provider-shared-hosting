@@ -152,8 +152,9 @@ class Provider extends Category implements ProviderInterface
     {
         $password = $params->current_password;
 
-        // If the password has not been provided, change the password to a random one.
-        if (empty($password)) {
+        // If the password has not been provided, or contains characters CyberPanel
+        // rejects, change the password to a random one.
+        if (empty($password) || !$this->isValidPassword($password)) {
             $password = Helper::generatePassword(15, $this->allowedCharacters);
 
             $this->api()->updatePassword($params->username, $password);
@@ -178,7 +179,7 @@ class Provider extends Category implements ProviderInterface
      */
     public function changePassword(ChangePasswordParams $params): EmptyResult
     {
-        if (!preg_match('/^[' . $this->allowedCharacters . ']+$/D', $params->password)) {
+        if (!$this->isValidPassword($params->password)) {
             $this->errorResult(
                 'Password may only contain letters, numbers, underscore (_), plus (+) and dash (-)'
             );
@@ -350,6 +351,14 @@ class Provider extends Category implements ProviderInterface
         }
 
         return $prefix . $suffix;
+    }
+
+    /**
+     * Whether the password contains only allowed characters.
+     */
+    protected function isValidPassword(string $password): bool
+    {
+        return (bool) preg_match('/^[' . $this->allowedCharacters . ']+$/D', $password);
     }
 
     /**
