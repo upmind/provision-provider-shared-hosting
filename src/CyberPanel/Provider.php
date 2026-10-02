@@ -51,7 +51,7 @@ class Provider extends Category implements ProviderInterface
     private ?Api $api = null;
 
     /**
-     * Characters allowed in usernames and generated passwords: alphanumerics,
+     * Characters allowed in usernames and passwords: alphanumerics,
      * underscore, plus and dash, avoiding those CyberPanel's API rejects in input: ` $ & ( ) [ ] { } ; : ' < >
      *
      * The dash must stay last, as Helper::generatePassword() reads `x-y` as a range,
@@ -92,8 +92,10 @@ class Provider extends Category implements ProviderInterface
             $this->errorResult('Package name is required');
         }
 
-        $username = $params->username ?: $this->sanitizeUsername($this->generateUsername($params->domain));
-        $password = $params->password ?: Helper::generatePassword(15, $this->allowedCharacters);
+        $username = $params->username ?: $this->sanitize($this->generateUsername($params->domain));
+        $password = $params->password
+            ? $this->sanitize($params->password)
+            : Helper::generatePassword(15, $this->allowedCharacters);
 
         $this->api()->assertPackageExists($params->package_name);
 
@@ -334,12 +336,12 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * Replace each character not allowed in a username with a random digit.
+     * Replace each character not allowed in a username or password with a random digit.
      *
      * Matches per multibyte character where possible, falling back to per byte
      * for input that is not valid UTF-8.
      */
-    protected function sanitizeUsername(string $username): string
+    protected function sanitize(string $value): string
     {
         $replaceWithDigit = static function (): string {
             return (string) random_int(0, 9);
@@ -347,8 +349,8 @@ class Provider extends Category implements ProviderInterface
 
         $disallowedCharactersRegex = '/[^' . $this->allowedCharacters . ']/';
 
-        return preg_replace_callback($disallowedCharactersRegex . 'u', $replaceWithDigit, $username)
-            ?? preg_replace_callback($disallowedCharactersRegex, $replaceWithDigit, $username);
+        return preg_replace_callback($disallowedCharactersRegex . 'u', $replaceWithDigit, $value)
+            ?? preg_replace_callback($disallowedCharactersRegex, $replaceWithDigit, $value);
     }
 
     /**
