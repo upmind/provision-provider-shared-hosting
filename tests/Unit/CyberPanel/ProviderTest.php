@@ -45,14 +45,14 @@ class ProviderTest extends CyberPanelTestCase
             'email' => 'owner@example.com',
             'package_name' => 'Pro',
             'username' => 'bob',
-            'password' => 'P4ssword!',
+            'password' => 'P4ssword_+-',
         ], false));
 
         $this->assertSame(['listPackage', 'createWebsite'], $this->calledFunctions());
 
         $payload = $this->requestPayload(1);
         $this->assertSame('bob', $payload['websiteOwner']);
-        $this->assertSame('P4ssword!', $payload['ownerPassword']);
+        $this->assertSame('P4ssword_+-', $payload['ownerPassword']);
         $this->assertSame('Pro', $payload['packageName']);
         $this->assertSame('example.com', $payload['domainName']);
         $this->assertSame('owner@example.com', $payload['ownerEmail']);
@@ -199,15 +199,16 @@ class ProviderTest extends CyberPanelTestCase
     {
         $result = $this->makeProvider()->getLoginUrl(GetLoginUrlParams::create([
             'username' => 'bob',
-            'current_password' => 'P4ssword!',
+            'current_password' => 'P4ssword_+-',
             'user_ip' => '203.0.113.5',
         ], false));
 
         $values = $this->resultValues($result);
-        $this->assertSame('https://cp.example.com:8090/', $values['login_url']);
+        $this->assertSame('https://cp.example.com:8090/api/loginAPI', $values['login_url']);
         $this->assertSame('203.0.113.5', $values['for_ip']);
         $this->assertNull($values['expires']);
-        $this->assertSame(['username' => 'bob', 'password' => 'P4ssword!'], $values['post_fields']);
+        $this->assertSame(['username' => 'bob', 'password' => 'P4ssword_+-'], $values['post_fields']);
+        $this->assertSame('Login URL generated', $result->getMessage());
         $this->assertSame([], $this->history, 'No API calls should be made');
     }
 
@@ -228,10 +229,33 @@ class ProviderTest extends CyberPanelTestCase
         $this->assertMatchesRegularExpression('/^[A-Za-z0-9_+-]+$/', $payload['ownerPassword']);
 
         $values = $this->resultValues($result);
-        $this->assertSame('https://cp.example.com:8090/', $values['login_url']);
+        $this->assertSame('https://cp.example.com:8090/api/loginAPI', $values['login_url']);
         $this->assertSame(
             ['username' => 'bob', 'password' => $payload['ownerPassword']],
             $values['post_fields'],
+            'Login must use the newly generated password'
+        );
+    }
+
+    public function testGetLoginUrlChangesPasswordWhenProvidedIsInvalid(): void
+    {
+        $this->queueJson(['changeStatus' => 1]);
+
+        $result = $this->makeProvider()->getLoginUrl(GetLoginUrlParams::create([
+            'username' => 'bob',
+            'current_password' => 'nT}O5Bk1Y6}J-ap',
+            'user_ip' => '203.0.113.5',
+        ], false));
+
+        $this->assertSame(['changeUserPassAPI'], $this->calledFunctions());
+        $payload = $this->requestPayload(0);
+        $this->assertSame('bob', $payload['websiteOwner']);
+        $this->assertSame(15, strlen($payload['ownerPassword']));
+        $this->assertMatchesRegularExpression('/^[A-Za-z0-9_+-]+$/', $payload['ownerPassword']);
+
+        $this->assertSame(
+            ['username' => 'bob', 'password' => $payload['ownerPassword']],
+            $this->resultValues($result)['post_fields'],
             'Login must use the newly generated password'
         );
     }
@@ -244,13 +268,46 @@ class ProviderTest extends CyberPanelTestCase
 
         $result = $this->makeProvider()->changePassword(ChangePasswordParams::create([
             'username' => 'bob',
-            'password' => 'N3wPassword!',
+            'password' => 'N3w_Pass+word-',
         ], false));
 
         $this->assertSame(['changeUserPassAPI'], $this->calledFunctions());
         $this->assertSame('bob', $this->requestPayload(0)['websiteOwner']);
-        $this->assertSame('N3wPassword!', $this->requestPayload(0)['ownerPassword']);
+        $this->assertSame('N3w_Pass+word-', $this->requestPayload(0)['ownerPassword']);
         $this->assertSame('Password changed', $result->getMessage());
+    }
+
+    /**
+     * @dataProvider invalidChangePasswordProvider
+     */
+    public function testChangePasswordRejectsDisallowedCharacters(string $password): void
+    {
+        $error = $this->catchProvisionError(function () use ($password) {
+            $this->makeProvider()->changePassword(ChangePasswordParams::create([
+                'username' => 'bob',
+                'password' => $password,
+            ], false));
+        });
+
+        $this->assertSame(
+            'Password may only contain letters, numbers, underscore (_), plus (+) and dash (-)',
+            $error->getMessage()
+        );
+        $this->assertSame([], $this->history, 'No API calls should be made');
+    }
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    public static function invalidChangePasswordProvider(): array
+    {
+        return [
+            'braces' => ['nT}O5Bk1Y6}J-ap'],
+            'exclamation mark' => ['N3wPassword!'],
+            'space' => ['new password'],
+            'multibyte' => ['pässwörd'],
+            'trailing newline' => ["N3wPassword\n"],
+        ];
     }
 
     // changePackage
@@ -498,7 +555,30 @@ class ProviderTest extends CyberPanelTestCase
         $username = $this->makeProvider()->publicGenerateUsername($domain);
 
         $this->assertMatchesRegularExpression('/^' . preg_quote($expectedPrefix, '/') . '\d{1,2}$/', $username);
+        $this->assertGreaterThanOrEqual(3, strlen($username));
         $this->assertLessThanOrEqual(8, strlen($username));
+    }
+
+    /**
+     * @dataProvider shortUsernameProvider
+     */
+    public function testGenerateUsernamePadsToMinimumLength(string $domain, string $expectedPattern): void
+    {
+        $username = $this->makeProvider()->publicGenerateUsername($domain);
+
+        $this->assertMatchesRegularExpression($expectedPattern, $username);
+        $this->assertGreaterThanOrEqual(3, strlen($username));
+    }
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    public static function shortUsernameProvider(): array
+    {
+        return [
+            'no letters in domain' => ['123.45', '/^[a-z]{1,2}\d{1,2}$/'],
+            'single letter after leading digits' => ['1-x', '/^x[a-z]?\d{1,2}$/'],
+        ];
     }
 
     /**
@@ -516,7 +596,7 @@ class ProviderTest extends CyberPanelTestCase
         ];
     }
 
-    public function testSanitizeUsernameReplacesInvalidCharactersWithDigits(): void
+    public function testSanitizeReplacesInvalidCharactersWithDigits(): void
     {
         $allowed = array_merge(range('a', 'z'), range('A', 'Z'), range('0', '9'), ['_', '-']);
         $invalid = [';', '&', '|', '`', '$', '.', '/', '\\', '!', '@', ' '];
@@ -533,16 +613,16 @@ class ProviderTest extends CyberPanelTestCase
             $expectedPattern .= preg_quote($allowedCharacter, '/') . '\d';
         }
 
-        $sanitized = $this->makeProvider()->publicSanitizeUsername($username);
+        $sanitized = $this->makeProvider()->publicSanitize($username);
 
         // Allowed characters are kept in place, each invalid one becomes a single digit.
         $this->assertMatchesRegularExpression('/^' . $expectedPattern . '$/', $sanitized);
         $this->assertSame(strlen($username), strlen($sanitized));
     }
 
-    public function testSanitizeUsernameLeavesValidUsernameUnchanged(): void
+    public function testSanitizeLeavesValidValueUnchanged(): void
     {
-        $this->assertSame('ok_Name-123', $this->makeProvider()->publicSanitizeUsername('ok_Name-123'));
+        $this->assertSame('ok_Name-123', $this->makeProvider()->publicSanitize('ok_Name-123'));
     }
 
     public function testCreateDoesNotSanitizeGivenUsername(): void
@@ -554,12 +634,28 @@ class ProviderTest extends CyberPanelTestCase
             'email' => 'owner@example.com',
             'package_name' => 'Default',
             'username' => 'bob;x',
-            'password' => 'P4ssword!',
+            'password' => 'P4ssword_+-',
         ], false));
 
         $payload = $this->requestPayload(1);
         $this->assertSame('bob;x', $payload['websiteOwner']);
-        $this->assertSame('P4ssword!', $payload['ownerPassword']);
+        $this->assertSame('P4ssword_+-', $payload['ownerPassword']);
         $this->assertSame('bob;x', $this->resultValues($result)['username']);
+    }
+
+    public function testCreateSanitizesGivenPassword(): void
+    {
+        $this->queueJson(['Default'], ['createWebSiteStatus' => 1]);
+
+        $this->makeProvider()->create(CreateParams::create([
+            'domain' => 'example.com',
+            'email' => 'owner@example.com',
+            'package_name' => 'Default',
+            'username' => 'bob',
+            'password' => 'nT}O5Bk1Y6}J-ap',
+        ], false));
+
+        $payload = $this->requestPayload(1);
+        $this->assertMatchesRegularExpression('/^nT\dO5Bk1Y6\dJ-ap$/', $payload['ownerPassword']);
     }
 }

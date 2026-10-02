@@ -47,8 +47,8 @@ class TestableProvider extends Provider
         return $this->generateUsername($base);
     }
 
-    public function publicSanitizeUsername(string $username): string
+    public function publicSanitize(string $value): string
     {
-        return $this->sanitizeUsername($username);
+        return $this->sanitize($value);
     }
 }
