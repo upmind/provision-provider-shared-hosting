@@ -48,6 +48,7 @@ The following providers are currently implemented:
   - [Webuzo](https://webuzo.com/docs/api/webuzo-admin-api)
   - [SPanel](https://www.spanel.io/docs/article/api-functions/api-basics/)
   - [CyberPanel](https://cyberpanel.net/KnowledgeBase/) ([setup guide](docs/cyber-panel/README.md))
+  - [Koapanel](https://koapanel.app/en/)
 
 ## Functions
 

@@ -21,6 +21,7 @@ use Upmind\ProvisionProviders\SharedHosting\PanelAlpha\Provider as PanelAlpha;
 use Upmind\ProvisionProviders\SharedHosting\Webuzo\Provider as Webuzo;
 use Upmind\ProvisionProviders\SharedHosting\SPanel\Provider as SPanel;
 use Upmind\ProvisionProviders\SharedHosting\CyberPanel\Provider as CyberPanel;
+use Upmind\ProvisionProviders\SharedHosting\Koapanel\Provider as Koapanel;
 
 class LaravelServiceProvider extends ProvisionServiceProvider
 {
@@ -43,5 +44,6 @@ class LaravelServiceProvider extends ProvisionServiceProvider
         $this->bindProvider('shared-hosting', 'webuzo', Webuzo::class);
         $this->bindProvider('shared-hosting', 'spanel', SPanel::class);
         $this->bindProvider('shared-hosting', 'cyber-panel', CyberPanel::class);
+        $this->bindProvider('shared-hosting', 'koapanel', Koapanel::class);
     }
 }
