@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## Unreleased
+
+- Add Koapanel provider
+
 ## [v6.18.3](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.18.3) - 2026-10-02
 
 - Fix CyberPanel create() failing when the provided password contains characters rejected by the API, sanitise it to only allow alphanumeric characters and `-`, `_`, `+`
