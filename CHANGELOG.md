@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## Unreleased
+
+- Fix Enhance customer lookup by email timing out on large servers, use the search API instead of paginating
+
 ## [v6.18.3](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.18.3) - 2026-10-02
 
 - Fix CyberPanel create() failing when the provided password contains characters rejected by the API, sanitise it to only allow alphanumeric characters and `-`, `_`, `+`
