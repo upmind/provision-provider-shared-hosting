@@ -488,19 +488,25 @@ class Provider extends Category implements ProviderInterface
 
     protected function findCustomerIdByEmail(string $email): string
     {
-        $offset = 0;
-        $limit = 500;
+        // search matches partially, so filter results for an exact owner email match
+        $customers = $this->api()->customers()->getOrgCustomers(
+            $this->configuration->org_id,
+            0,
+            100,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            $email
+        );
 
-        do {
-            $customers = $this->api()->customers()->getOrgCustomers($this->configuration->org_id, $offset, $limit);
-            $offset += $limit;
-
-            foreach ($customers->getItems() as $customer) {
-                if ($email === $customer->getOwnerEmail()) {
-                    return $customer->getId();
-                }
+        foreach ($customers->getItems() as $customer) {
+            if (strcasecmp($email, (string)$customer->getOwnerEmail()) === 0) {
+                return $customer->getId();
             }
-        } while ($offset + $limit < $customers->getTotal());
+        }
 
         throw $this->errorResult('Customer not found', ['email' => $email]);
     }
