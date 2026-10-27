@@ -5,6 +5,7 @@ All notable changes to the package will be documented in this file.
 ## Unreleased
 
 - Fix Enhance customer lookup by email timing out on large servers, use the search API instead of paginating
+- Fix Enhance getInfo() and getUsage() failing with a misleading error when no website is found for the given domain and no subscription id is provided
 
 ## [v6.18.3](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.18.3) - 2026-10-02
 
