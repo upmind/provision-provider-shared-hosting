@@ -19,6 +19,7 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * @property-read bool $remove_www Whether or not to strip www. from domain names when creating new subscriptions
  * @property-read string|null $dedicated_server_group Server group to check when creating dedicated plans with a given server id
  * @property-read bool|null $debug Whether or not to enable debug logging of API requests
+ * @property-read bool|null $resellers_login_to_own_panel Log resellers in via their own CP domain
  */
 class Configuration extends DataSet
 {
@@ -34,6 +35,7 @@ class Configuration extends DataSet
             'remove_www' => ['boolean'],
             'dedicated_server_group' => ['nullable', 'string'],
             'debug' => ['boolean'],
+            'resellers_login_to_own_panel' => ['nullable', 'boolean'],
         ]);
     }
 }
