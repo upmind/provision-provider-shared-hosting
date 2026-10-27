@@ -1197,10 +1197,15 @@ class Provider extends Category implements ProviderInterface
     }
 
     /**
-     * Hostname to use for control panel URLs, if the org has one.
+     * Hostname to use for control panel URLs, if the org has one and resellers
+     * are configured to log in to their own panel.
      */
     protected function getControlPanelHostname(string $orgId): ?string
     {
+        if (empty($this->configuration->resellers_login_to_own_panel)) {
+            return null; // skip the slow website lookup, and avoid lock-out via un-pointed domains
+        }
+
         if (isset($this->controlPanelHostname)) {
             return $this->controlPanelHostname ?: null;
         }

@@ -18,6 +18,7 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * @property-read bool|null $create_subscription_only When enabled, create() creates a subscription without creating a website
  * @property-read bool $remove_www Whether or not to strip www. from domain names when creating new subscriptions
  * @property-read string|null $dedicated_server_group Server group to check when creating dedicated plans with a given server id
+ * @property-read bool|null $resellers_login_to_own_panel Log resellers in via their own CP domain
  */
 class Configuration extends DataSet
 {
@@ -32,6 +33,7 @@ class Configuration extends DataSet
             'create_subscription_only' => ['boolean'],
             'remove_www' => ['boolean'],
             'dedicated_server_group' => ['nullable', 'string'],
+            'resellers_login_to_own_panel' => ['nullable', 'boolean'],
         ]);
     }
 }
