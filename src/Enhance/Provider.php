@@ -522,9 +522,16 @@ class Provider extends Category implements ProviderInterface
     ): AccountInfo {
         $website = $this->findWebsite($customerId, $subscriptionId, $domain, false);
 
-        if (!$website && !empty($domain)) {
+        if (!$website && !empty($domain) && $subscriptionId) {
             // deleted domain - try again with no domain name
             $website = $this->findWebsite($customerId, $subscriptionId, null, false);
+        }
+
+        if (!$website && !$subscriptionId) {
+            $this->errorResult('Website not found', [
+                'customer_id' => $customerId,
+                'domain' => $domain,
+            ]);
         }
 
         $subscriptionId = $subscriptionId ?? $website->getSubscriptionId();
@@ -618,9 +625,11 @@ class Provider extends Category implements ProviderInterface
         if (!$subscriptionId) {
             $website = $this->findWebsite($customerId, $subscriptionId, $domain, false);
 
-            if (!$website && !empty($domain)) {
-                // deleted domain - try again with no domain name
-                $website = $this->findWebsite($customerId, $subscriptionId, null, false);
+            if (!$website) {
+                $this->errorResult('Website not found', [
+                    'customer_id' => $customerId,
+                    'domain' => $domain,
+                ]);
             }
         }
 
