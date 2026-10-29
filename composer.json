@@ -32,7 +32,15 @@
         "upmind/provision-provider-base": "^3.6"
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "audit": {
+            "ignore": {
+                "CVE-2025-64500": "symfony/http-foundation 4.x has no fix; only required via illuminate/validation file rules, Request::getPathInfo() is not used",
+                "CVE-2024-50345": "symfony/http-foundation 4.x has no fix; only required via illuminate/validation file rules, Request URL parsing is not used",
+                "CVE-2024-51736": "symfony/process 4.x has no fix; Windows only, and only required via illuminate/console, Process is not used",
+                "CVE-2026-24739": "symfony/process 4.x has no fix; Windows only, and only required via illuminate/console, Process is not used"
+            }
+        }
     },
     "extra": {
         "laravel": {
