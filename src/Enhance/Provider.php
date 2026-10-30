@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\SharedHosting\Enhance;
 
+use Carbon\Carbon;
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\MessageFormatter;
@@ -345,6 +346,12 @@ class Provider extends Category implements ProviderInterface
         try {
             $customerId = $params->customer_id ?: $this->findCustomerIdByEmail($params->username);
             $subscriptionId = intval($params->subscription_id) ?: null;
+
+            if ($params->wantsToken()) {
+                return LoginUrl::create()
+                    ->setToken($this->getSessionToken($customerId))
+                    ->setExpires(Carbon::now()->addSeconds(60)); // must be used within 60 seconds
+            }
 
             $loginUrl = $this->getSsoUrl($customerId, $subscriptionId, $params->domain);
 
@@ -1074,6 +1081,20 @@ class Provider extends Category implements ProviderInterface
         }
 
         return $this->getEnhanceLoginUrl($customerId, $websiteId ?? null);
+    }
+
+    /**
+     * Create a session token for the customer's owner member, which can be
+     * used as a bearer token and is initially valid for 60 seconds.
+     */
+    protected function getSessionToken(string $customerId): string
+    {
+        $token = $this->api()->members()->createMemberSession(
+            $customerId,
+            $this->findOwnerMember($customerId)->getId()
+        );
+
+        return json_decode($token) ?? $token;
     }
 
     protected function getEnhanceLoginUrl(string $customerId, ?string $websiteId = null): string
