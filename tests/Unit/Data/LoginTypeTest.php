@@ -95,12 +95,30 @@ class LoginTypeTest extends TestCase
         $this->assertNull($result->login_url);
     }
 
-    public function testResultRequiresUrlOrToken(): void
+    public function testResultRequiresUrlByDefault(): void
     {
-        $errors = LoginUrl::create()->errors();
+        $this->assertArrayHasKey('login_url', LoginUrl::create()->errors());
+    }
 
-        $this->assertArrayHasKey('login_url', $errors);
-        $this->assertArrayHasKey('token', $errors);
+    public function testTokenTypeResultRequiresToken(): void
+    {
+        $result = LoginUrl::create()->setType('token')->setLoginUrl('https://panel.example.com');
+
+        $this->assertArrayHasKey('token', $result->errors());
+    }
+
+    public function testUrlTypeResultRequiresUrl(): void
+    {
+        $result = LoginUrl::create(['type' => 'url', 'token' => 'abc123']);
+
+        $this->assertArrayHasKey('login_url', $result->errors());
+    }
+
+    public function testUntypedResultRequiresUrl(): void
+    {
+        $result = LoginUrl::create(['token' => 'abc123']);
+
+        $this->assertArrayHasKey('login_url', $result->errors());
     }
 
     public function testResultRejectsUnknownType(): void
