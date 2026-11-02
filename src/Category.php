@@ -64,6 +64,10 @@ abstract class Category extends BaseCategory
     /**
      * Obtains a signed URL which a user can be redirected to which
      * automatically logs them into their account.
+     *
+     * Where `type` is `token` and the provider supports it, obtains a login
+     * token instead. Providers which don't support the requested type return
+     * a login URL; the result `type` indicates which was returned.
      */
     abstract public function getLoginUrl(GetLoginUrlParams $params): LoginUrl;
 
