@@ -7,6 +7,7 @@ All notable changes to the package will be documented in this file.
 - Fix Enhance customer lookup by email timing out on large servers, use the search API instead of paginating
 - Fix Enhance getInfo() and getUsage() failing with a misleading error when no website is found for the given domain and no subscription id is provided
 - Add Enhance `resellers_login_to_own_panel` configuration setting (default off); customers are now only logged in via their own control panel domain when this is enabled
+- Add optional `type` param to getLoginUrl(), `url` (default) or `token`, and add `type` and `token` to the LoginUrl result; providers which don't support login tokens continue to return a login URL
 
 ## [v6.18.3](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.18.3) - 2026-10-02
 
