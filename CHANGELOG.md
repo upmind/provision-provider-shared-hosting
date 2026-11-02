@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## Unreleased
+
+- Implement AdminBolt provider
+
 ## [v6.19.0](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.19.0) - 2026-11-02
 
 - Fix Enhance customer lookup by email timing out on large servers, use the search API instead of paginating
