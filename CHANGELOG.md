@@ -2,6 +2,17 @@
 
 All notable changes to the package will be documented in this file.
 
+## Unreleased
+
+- Require PHP 8.3; support PHP 8.3, 8.4 and 8.5
+- Require Laravel 13 (`illuminate/support` ^13.0)
+- Require `upmind/provision-provider-base` ^5.0 (Guzzle 8)
+- Require `giggsey/libphonenumber-for-php-lite` ^9
+- Update `upmind/enhance-sdk` to a Guzzle 8 compatible version
+- Update dev dependencies to `phpstan/phpstan` ^2.0 and `phpunit/phpunit` ^12.0 || ^13.0
+- Update Guzzle exception handling for Guzzle 8: read responses only from `ResponseException`, and treat network timeouts (`NetworkException`) as connection errors in WHM and CyberPanel
+- Update WHM API request to read the default query from the concrete Guzzle `Client`
+
 ## [v6.19.0](https://github.com/upmind-automation/provision-provider-shared-hosting/releases/tag/v6.19.0) - 2026-11-02
 
 - Fix Enhance customer lookup by email timing out on large servers, use the search API instead of paginating

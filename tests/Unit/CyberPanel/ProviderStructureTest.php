@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\SharedHosting\Tests\Unit\CyberPanel;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
@@ -31,9 +32,7 @@ class ProviderStructureTest extends TestCase
         );
     }
 
-    /**
-     * @dataProvider requiredMethodProvider
-     */
+    #[DataProvider('requiredMethodProvider')]
     public function testProviderImplementsRequiredMethod(string $method): void
     {
         $reflection = new ReflectionClass(CyberPanelProvider::class);

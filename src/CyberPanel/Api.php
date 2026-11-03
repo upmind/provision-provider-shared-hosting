@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\SharedHosting\CyberPanel;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\NetworkException;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ResponseException;
 use GuzzleHttp\Exception\TransferException;
 use JsonException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
@@ -54,11 +55,11 @@ class Api
             $response = $this->client->request('POST', "api/{$function}", [
                 'json' => $params,
             ]);
-        } catch (ConnectException $e) {
+        } catch (NetworkException $e) {
             throw ProvisionFunctionError::create('Unable to connect to the hosting server', $e)
                 ->withData(['function' => $function]);
         } catch (RequestException $e) {
-            $response = $e->getResponse();
+            $response = $e instanceof ResponseException ? $e->getResponse() : null;
 
             throw ProvisionFunctionError::create('The hosting server returned an error response', $e)
                 ->withData([

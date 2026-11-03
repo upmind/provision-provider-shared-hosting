@@ -20,21 +20,21 @@
         }
     },
     "require": {
-        "php": "8.1 - 8.3",
+        "php": "^8.3",
         "ext-curl": "*",
         "ext-json": "*",
         "ext-simplexml": "*",
         "ext-soap": "*",
-        "giggsey/libphonenumber-for-php-lite": "^8",
-        "illuminate/support": "^6.20 || ^7.0 || ^8.0 || ^9.0 || ^10.0 || ^11.0 || ^12.0",
+        "giggsey/libphonenumber-for-php-lite": "^9",
+        "illuminate/support": "^13.0",
         "plesk/api-php-lib": "^1.1",
         "upmind/20i-php-sdk": "^1.1",
-        "upmind/enhance-sdk": "^12.26.3",
-        "upmind/provision-provider-base": "^4.0"
+        "upmind/enhance-sdk": "dev-feature/guzzle-8-support as 12.26.3",
+        "upmind/provision-provider-base": "dev-feature/base-v5-support as 5.0.0"
     },
     "require-dev": {
-        "phpstan/phpstan": "^1.10",
-        "phpunit/phpunit": "^9.5 || ^10.5 || ^11.0"
+        "phpstan/phpstan": "^2.0",
+        "phpunit/phpunit": "^12.0 || ^13.0"
     },
     "config": {
         "sort-packages": true

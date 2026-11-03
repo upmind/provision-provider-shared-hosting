@@ -10,7 +10,6 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\MessageFormatter;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Promise\Utils as PromiseUtils;
-use GuzzleHttp\Psr7\Message;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Support\Arr;
@@ -102,7 +101,7 @@ class Provider extends Category implements ProviderInterface
     /**
      * Array containing the history of guzzle requests for this instance.
      *
-     * @var array<Message[]>
+     * @var array<int, array<string, mixed>>
      */
     protected $guzzleHistory = [];
 
@@ -212,7 +211,7 @@ class Provider extends Category implements ProviderInterface
                     $this->configuration->create_subscription_only ? 'Subscription' : 'Website'
                 ));
         } catch (Throwable $e) {
-            if ($customerCreated && isset($customerId)) {
+            if ($customerCreated) {
                 try {
                     $this->deleteCustomer($customerId);
                 } catch (Throwable $deleteException) {
@@ -1264,6 +1263,7 @@ class Provider extends Category implements ProviderInterface
 
         // @phpstan-ignore-next-line
         foreach ($result ? $result->getItems() : [] as $website) {
+            // @phpstan-ignore-next-line
             if ($website->getKind() !== WebsiteKind::CONTROL_PANEL) {
                 continue; // guard against control panels which ignore the kind filter
             }
@@ -1441,6 +1441,7 @@ class Provider extends Category implements ProviderInterface
                     continue; // server not in group
                 }
 
+                // @phpstan-ignore-next-line
                 if ($server->getRoles()->getApplication() !== RoleInstallationState::ENABLED) {
                     continue; // server not an application server
                 }

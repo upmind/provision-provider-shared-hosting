@@ -4,6 +4,7 @@ declare (strict_types=1);
 
 namespace Upmind\ProvisionProviders\SharedHosting\WHMv1\Api;
 
+use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use Psr\Http\Message\ResponseInterface as Psr7Response;
 use Upmind\ProvisionBase\Provider\Helper\Api\Request as ApiRequest;
@@ -27,7 +28,7 @@ class Request extends ApiRequest
 
         if ($params) {
             $options['query'] = array_merge(
-                $client->getConfig('query'),
+                $client instanceof Client ? $client->getConfig('query') : [],
                 $params
             );
         }

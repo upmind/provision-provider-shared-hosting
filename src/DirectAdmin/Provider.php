@@ -326,7 +326,7 @@ class Provider extends Category implements ProviderInterface
     protected function handleException(Throwable $e): void
     {
         if ($e instanceof TransferException) {
-            if (($e instanceof ServerException) && $e->hasResponse()) {
+            if ($e instanceof ServerException) {
                 $response = $e->getResponse();
                 $reason = $response->getReasonPhrase();
                 $responseBody = $response->getBody()->__toString();

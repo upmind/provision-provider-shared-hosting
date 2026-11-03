@@ -4,9 +4,9 @@
 help:
 	@echo "Available commands:"
 	@echo "   make help                  : List all available Makefile commands"
-	@echo "   make setup-php81           : Start the dev environment with PHP 8.1"
-	@echo "   make setup-php82           : Start the dev environment with PHP 8.2"
 	@echo "   make setup-php83           : Start the dev environment with PHP 8.3"
+	@echo "   make setup-php84           : Start the dev environment with PHP 8.4"
+	@echo "   make setup-php85           : Start the dev environment with PHP 8.5"
 	@echo "   make shell                 : Get an interactive shell on the PHP container"
 	@echo "   make test                  : Run Tests (PHPUnit)"
 	@echo "   make static-analysis       : Run Static Analysis (PHPStan)"
@@ -16,14 +16,14 @@ help:
 	@echo "   make kill-containers       : Stop and remove all containers"
 	@echo "   make composer-install      : Install composer dependencies"
 
-# Typing 'make setup-php81' will start the dev environment with PHP 8.1
-setup-php81: --prep-docker-compose-file stop-containers --prep-dockerfile-php81 start-containers --remove-packages composer-install
-
-# Typing 'make setup-php82' will start the dev environment with PHP 8.2
-setup-php82: --prep-docker-compose-file stop-containers --prep-dockerfile-php82 start-containers --remove-packages composer-install
-
 # Typing 'make setup-php83' will start the dev environment with PHP 8.3
 setup-php83: --prep-docker-compose-file stop-containers --prep-dockerfile-php83 start-containers --remove-packages composer-install
+
+# Typing 'make setup-php84' will start the dev environment with PHP 8.4
+setup-php84: --prep-docker-compose-file stop-containers --prep-dockerfile-php84 start-containers --remove-packages composer-install
+
+# Typing 'make setup-php85' will start the dev environment with PHP 8.5
+setup-php85: --prep-docker-compose-file stop-containers --prep-dockerfile-php85 start-containers --remove-packages composer-install
 
 # Get a shell on the PHP container
 shell:
@@ -57,17 +57,17 @@ kill-containers:
 composer-install:
 	docker compose exec provision-provider-shared-hosting composer install --no-interaction
 
-# Copy Dockerfile for PHP 8.1
---prep-dockerfile-php81: --remove-dockerfile
-	cp "./.docker/Dockerfile.php81" "./.docker/Dockerfile"
-
-# Copy Dockerfile for PHP 8.2
---prep-dockerfile-php82: --remove-dockerfile
-	cp "./.docker/Dockerfile.php82" "./.docker/Dockerfile"
-
 # Copy Dockerfile for PHP 8.3
 --prep-dockerfile-php83: --remove-dockerfile
 	cp "./.docker/Dockerfile.php83" "./.docker/Dockerfile"
+
+# Copy Dockerfile for PHP 8.4
+--prep-dockerfile-php84: --remove-dockerfile
+	cp "./.docker/Dockerfile.php84" "./.docker/Dockerfile"
+
+# Copy Dockerfile for PHP 8.5
+--prep-dockerfile-php85: --remove-dockerfile
+	cp "./.docker/Dockerfile.php85" "./.docker/Dockerfile"
 
 # Copy docker-compose.yml file
 --prep-docker-compose-file:
