@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\SharedHosting\PanelAlpha;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ResponseException;
 use Throwable;
 use Carbon\Carbon;
 use GuzzleHttp\Exception\ClientException;
@@ -367,7 +367,7 @@ class Provider extends Category implements ProviderInterface
      */
     protected function handleException(Throwable $e): void
     {
-        if (($e instanceof RequestException) && $e->hasResponse()) {
+        if ($e instanceof ResponseException) {
             /** @var \Psr\Http\Message\ResponseInterface $response */
             $response = $e->getResponse();
 
@@ -384,7 +384,7 @@ class Provider extends Category implements ProviderInterface
             );
         }
 
-        // Throw the exception if it's not a RequestException
+        // Throw the exception if it's not a ResponseException
         throw $e;
     }
 

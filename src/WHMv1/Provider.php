@@ -6,8 +6,8 @@ namespace Upmind\ProvisionProviders\SharedHosting\WHMv1;
 
 use Carbon\Carbon;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\ConnectException;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\NetworkException;
+use GuzzleHttp\Exception\ResponseException;
 use GuzzleHttp\Exception\TransferException;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Promise\Utils as PromiseUtils;
@@ -997,11 +997,11 @@ class Provider extends SharedHosting implements ProviderInterface
      */
     protected function exceptionWasTimeout(Throwable $e): bool
     {
-        if ($e instanceof ConnectException && Str::contains($e->getMessage(), 'Operation timed out')) {
+        if ($e instanceof NetworkException && Str::contains($e->getMessage(), 'Operation timed out')) {
             return true;
         }
 
-        if ($e instanceof RequestException && $e->hasResponse()) {
+        if ($e instanceof ResponseException) {
             $httpCode = $e->getResponse()->getStatusCode();
 
             if ($httpCode === 524) {
@@ -1075,7 +1075,7 @@ class Provider extends SharedHosting implements ProviderInterface
             ];
 
             if ($e instanceof TransferException) {
-                if ($e instanceof RequestException && $e->hasResponse()) {
+                if ($e instanceof ResponseException) {
                     /** @var \Psr\Http\Message\ResponseInterface $response */
                     $response = $e->getResponse();
                     $responseBody = $response->getBody()->__toString();

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\SharedHosting\Tests\Unit\CyberPanel;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use Upmind\ProvisionProviders\SharedHosting\CyberPanel\Data\Configuration;
 use Upmind\ProvisionProviders\SharedHosting\CyberPanel\Provider;
 use Upmind\ProvisionProviders\SharedHosting\Data\AccountUsername;
@@ -88,10 +89,9 @@ class ProviderTest extends CyberPanelTestCase
     }
 
     /**
-     * @dataProvider createMissingFieldProvider
-     *
      * @param array<string, string> $params
      */
+    #[DataProvider('createMissingFieldProvider')]
     public function testCreateRequiresFields(array $params, string $expectedMessage): void
     {
         $error = $this->catchProvisionError(function () use ($params) {
@@ -277,9 +277,7 @@ class ProviderTest extends CyberPanelTestCase
         $this->assertSame('Password changed', $result->getMessage());
     }
 
-    /**
-     * @dataProvider invalidChangePasswordProvider
-     */
+    #[DataProvider('invalidChangePasswordProvider')]
     public function testChangePasswordRejectsDisallowedCharacters(string $password): void
     {
         $error = $this->catchProvisionError(function () use ($password) {
@@ -473,9 +471,7 @@ class ProviderTest extends CyberPanelTestCase
         $this->assertSame('Failed to delete hosting account', $error->getMessage());
     }
 
-    /**
-     * @dataProvider domainRequiredProvider
-     */
+    #[DataProvider('domainRequiredProvider')]
     public function testDomainCentricOperationsRequireDomain(string $method, string $paramsClass): void
     {
         $provider = $this->makeProvider();
@@ -502,9 +498,7 @@ class ProviderTest extends CyberPanelTestCase
 
     // unsupported operations
 
-    /**
-     * @dataProvider unsupportedOperationProvider
-     */
+    #[DataProvider('unsupportedOperationProvider')]
     public function testUnsupportedOperations(string $method, string $paramsClass): void
     {
         $provider = $this->makeProvider();
@@ -547,9 +541,7 @@ class ProviderTest extends CyberPanelTestCase
         $this->assertSame('https://cp.example.com/', $provider->publicControlPanelUrl());
     }
 
-    /**
-     * @dataProvider usernameProvider
-     */
+    #[DataProvider('usernameProvider')]
     public function testGenerateUsername(string $domain, string $expectedPrefix): void
     {
         $username = $this->makeProvider()->publicGenerateUsername($domain);
@@ -559,9 +551,7 @@ class ProviderTest extends CyberPanelTestCase
         $this->assertLessThanOrEqual(8, strlen($username));
     }
 
-    /**
-     * @dataProvider shortUsernameProvider
-     */
+    #[DataProvider('shortUsernameProvider')]
     public function testGenerateUsernamePadsToMinimumLength(string $domain, string $expectedPattern): void
     {
         $username = $this->makeProvider()->publicGenerateUsername($domain);

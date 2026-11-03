@@ -8,6 +8,7 @@ use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\TransferException;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Upmind\ProvisionProviders\SharedHosting\Data\CreateParams;
 
 class ApiTest extends CyberPanelTestCase
@@ -70,7 +71,7 @@ class ApiTest extends CyberPanelTestCase
 
     public function testMakeRequestWrapsGenericTransferException(): void
     {
-        $this->mockHandler->append(new TransferException('Something broke'));
+        $this->mockHandler->append(new TransferException('Something broke', new Request('POST', 'api/listPackage')));
 
         $error = $this->catchProvisionError(function () {
             $this->makeApi()->makeRequest('listPackage');
@@ -80,9 +81,7 @@ class ApiTest extends CyberPanelTestCase
         $this->assertSame(['function' => 'listPackage'], $error->getData());
     }
 
-    /**
-     * @dataProvider invalidResponseBodyProvider
-     */
+    #[DataProvider('invalidResponseBodyProvider')]
     public function testMakeRequestRejectsInvalidResponseBody(string $body): void
     {
         $this->queueJson($body);
@@ -183,11 +182,10 @@ class ApiTest extends CyberPanelTestCase
     }
 
     /**
-     * @dataProvider packageListResponseProvider
-     *
      * @param string $body
      * @param string[] $expected
      */
+    #[DataProvider('packageListResponseProvider')]
     public function testListPackageNamesHandlesResponseFormats(string $body, array $expected): void
     {
         $this->queueJson($body);
@@ -271,8 +269,6 @@ class ApiTest extends CyberPanelTestCase
     }
 
     /**
-     * @dataProvider simpleEndpointProvider
-     *
      * @param string $method Api method name
      * @param array<int, string> $args
      * @param string $function Expected API function
@@ -280,6 +276,7 @@ class ApiTest extends CyberPanelTestCase
      * @param string $statusKey Success flag in the response
      * @param string $errorMessage Expected failure message
      */
+    #[DataProvider('simpleEndpointProvider')]
     public function testSimpleEndpointSuccess(
         string $method,
         array $args,
@@ -300,8 +297,6 @@ class ApiTest extends CyberPanelTestCase
     }
 
     /**
-     * @dataProvider simpleEndpointProvider
-     *
      * @param string $method Api method name
      * @param array<int, string> $args
      * @param string $function Expected API function
@@ -309,6 +304,7 @@ class ApiTest extends CyberPanelTestCase
      * @param string $statusKey Success flag in the response
      * @param string $errorMessage Expected failure message
      */
+    #[DataProvider('simpleEndpointProvider')]
     public function testSimpleEndpointFailure(
         string $method,
         array $args,

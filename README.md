@@ -4,6 +4,7 @@
 
 This provision category contains the common functions used in provisioning flows for accounts/websites on various popular shared hosting platforms.
 
+- [Requirements](#requirements)
 - [Installation](#installation)
 - [Usage](#usage)
   - [Quick-start](#quick-start)
@@ -14,6 +15,12 @@ This provision category contains the common functions used in provisioning flows
 - [Credits](#credits)
 - [License](#license)
 - [Upmind](#upmind)
+
+## Requirements
+
+- PHP 8.3, 8.4 or 8.5
+- Laravel 13 (`illuminate/*` ^13.0)
+- Guzzle 8
 
 ## Installation
 

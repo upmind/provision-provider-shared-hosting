@@ -7,6 +7,7 @@ namespace Upmind\ProvisionProviders\SharedHosting\SPanel;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ResponseException;
 use JsonException;
 use Throwable;
 use GuzzleHttp\HandlerStack;
@@ -65,7 +66,7 @@ class Api
                 'exception' => $e->getMessage(),
             ];
 
-            if ($e->hasResponse()) {
+            if ($e instanceof ResponseException) {
                 $response = $e->getResponse();
                 $httpCode = $response->getStatusCode();
                 $httpReason = $response->getReasonPhrase();
